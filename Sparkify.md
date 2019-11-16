@@ -13,10 +13,10 @@ import sys
 
     Collecting pixiedust
     [?25l  Downloading https://files.pythonhosted.org/packages/bc/a8/e84b2ed12ee387589c099734b6f914a520e1fef2733c955982623080e813/pixiedust-1.1.17.tar.gz (197kB)
-    [K    100% |████████████████████████████████| 204kB 17.5MB/s a 0:00:01
+    [K    100% |████████████████████████████████| 204kB 29.2MB/s a 0:00:01
     [?25hCollecting mpld3 (from pixiedust)
     [?25l  Downloading https://files.pythonhosted.org/packages/91/95/a52d3a83d0a29ba0d6898f6727e9858fe7a43f6c2ce81a5fe7e05f0f4912/mpld3-0.3.tar.gz (788kB)
-    [K    100% |████████████████████████████████| 798kB 14.5MB/s ta 0:00:01
+    [K    100% |████████████████████████████████| 798kB 8.9MB/s eta 0:00:01    72% |███████████████████████▎        | 573kB 17.8MB/s eta 0:00:01
     [?25hRequirement already satisfied: lxml in /opt/conda/lib/python3.6/site-packages (from pixiedust) (4.1.1)
     Collecting geojson (from pixiedust)
       Downloading https://files.pythonhosted.org/packages/e4/8d/9e28e9af95739e6d2d2f8d4bef0b3432da40b7c3588fbad4298c1be09e48/geojson-2.5.0-py2.py3-none-any.whl
@@ -25,8 +25,8 @@ import sys
     Requirement already satisfied: markdown in /opt/conda/lib/python3.6/site-packages (from pixiedust) (2.6.9)
     Requirement already satisfied: colour in /opt/conda/lib/python3.6/site-packages (from pixiedust) (0.1.5)
     Requirement already satisfied: requests in /opt/conda/lib/python3.6/site-packages (from pixiedust) (2.18.4)
-    Requirement already satisfied: wheel<1.0,>=0.23.0 in /opt/conda/lib/python3.6/site-packages (from astunparse->pixiedust) (0.30.0)
     Requirement already satisfied: six<2.0,>=1.6.1 in /opt/conda/lib/python3.6/site-packages (from astunparse->pixiedust) (1.11.0)
+    Requirement already satisfied: wheel<1.0,>=0.23.0 in /opt/conda/lib/python3.6/site-packages (from astunparse->pixiedust) (0.30.0)
     Requirement already satisfied: chardet<3.1.0,>=3.0.2 in /opt/conda/lib/python3.6/site-packages (from requests->pixiedust) (3.0.4)
     Requirement already satisfied: idna<2.7,>=2.5 in /opt/conda/lib/python3.6/site-packages (from requests->pixiedust) (2.6)
     Requirement already satisfied: urllib3<1.23,>=1.21.1 in /opt/conda/lib/python3.6/site-packages (from requests->pixiedust) (1.22)
@@ -39,14 +39,6 @@ import sys
     Successfully built pixiedust mpld3
     Installing collected packages: mpld3, geojson, astunparse, pixiedust
     Successfully installed astunparse-1.6.2 geojson-2.5.0 mpld3-0.3 pixiedust-1.1.17
-
-
-
-```python
-pixiedust.optOut()
-```
-
-    Pixiedust will not collect anonymous install statistics.
 
 
 
@@ -69,6 +61,53 @@ import datetime
 import pixiedust
 
 ```
+
+    Pixiedust database opened successfully
+    Table VERSION_TRACKER created successfully
+    Table METRICS_TRACKER created successfully
+    
+    Share anonymous install statistics? (opt-out instructions)
+    
+    PixieDust will record metadata on its environment the next time the package is installed or updated. The data is anonymized and aggregated to help plan for future releases, and records only the following values:
+    
+    {
+       "data_sent": currentDate,
+       "runtime": "python",
+       "application_version": currentPixiedustVersion,
+       "space_id": nonIdentifyingUniqueId,
+       "config": {
+           "repository_id": "https://github.com/ibm-watson-data-lab/pixiedust",
+           "target_runtimes": ["Data Science Experience"],
+           "event_id": "web",
+           "event_organizer": "dev-journeys"
+       }
+    }
+    You can opt out by calling pixiedust.optOut() in a new cell.
+
+
+
+
+        <div style="margin:10px">
+            <a href="https://github.com/ibm-watson-data-lab/pixiedust" target="_new">
+                <img src="https://github.com/ibm-watson-data-lab/pixiedust/raw/master/docs/_static/pd_icon32.png" style="float:left;margin-right:10px"/>
+            </a>
+            <span>Pixiedust version 1.1.17</span>
+        </div>
+        
+
+
+    [31mPixiedust runtime updated. Please restart kernel[0m
+    Table USER_PREFERENCES created successfully
+    Table service_connections created successfully
+
+
+
+```python
+pixiedust.optOut()
+```
+
+    Pixiedust will not collect anonymous install statistics.
+
 
 
 ```python
@@ -745,11 +784,6 @@ user_log.filter((user_log["auth"]=="Logged In")&(user_log["artist"].isNotNull())
 
 
 ```python
-
-```
-
-
-```python
 print("Analyse value count of Roll Advert depending on level value:")
 user_log_valid.filter(user_log_valid["page"]=="Roll Advert").groupBy("level").count().show()
 ```
@@ -957,7 +991,7 @@ plt.ylabel("page");
 ```
 
 
-![png](output_26_0.png)
+![png](output_25_0.png)
 
 
 
@@ -2405,7 +2439,7 @@ pd_df.plot.line(x="hour", y="count");
 
 
 
-![png](output_48_1.png)
+![png](output_47_1.png)
 
 
 #### (6.1) "registration": analyse spread of date/ time
@@ -2417,7 +2451,7 @@ pd_df.plot.line(x="registration_date", y="count");
 ```
 
 
-![png](output_50_0.png)
+![png](output_49_0.png)
 
 
 #### "ts": further conversion to features for year/ month/ time
@@ -2426,33 +2460,6 @@ pd_df.plot.line(x="registration_date", y="count");
 ```python
 user_log_valid = user_log_valid.withColumn("ts_hour", hour("ts_timestamp"))
 ```
-
-# Data Cleaning
-
-
-```python
-# remove missing and null values
-#user_log_valid = user_log.dropna(how = "any", subset = ["userId", "sessionId"])
-#user_log_valid = user_log_valid.filter(user_log_valid["userId"] != "")
-#user_log_valid.count()
-
-# resulting count: 278154
-```
-
-
-
-
-    278154
-
-
-
-# Feature Engineering
-Once you've familiarized yourself with the data, build out the features you find promising to train your model on. To work with the full dataset, you can follow the following steps.
-- Write a script to extract the necessary features from the smaller subset of data
-- Ensure that your script is scalable, using the best practices discussed in Lesson 3
-- Try your script on the full data set, debugging your script if necessary
-
-If you are working in the classroom workspace, you can just extract features based on the small subset of data contained here. Be sure to transfer over this work to the larger dataset when you work on your Spark cluster.
 
 ## Features from "page" value ##
 
@@ -2572,6 +2579,9 @@ test_df.printSchema()
 
 
 ```python
+subset_list = list(page_value_feature_dict.values())
+subset_list.append("userId")
+
 test_df.select(subset_list).filter(
     (test_df["churn"]==1) | 
     (test_df["downgraded"]==1) | 
@@ -2593,10 +2603,6 @@ test_df.select(subset_list).filter(
 
 ```python
 print("Descriptive Analysis of userId's that churned, downgraded or upgraded")
-#pd_df= user_log_valid.select("userId", "churn", "downgraded", "upgraded").filter((user_log_valid["churn"]==1) | (user_log_valid["downgraded"]==1) | (user_log_valid["upgraded"]==1)).toPandas()
-subset_list = list(page_value_feature_dict.values())
-subset_list.append("userId")
-#pd_df = test_df.dropna(how = "all", subset = subset_list).toPandas()
 pd_df = test_df.select(subset_list).filter(
     (test_df["churn"]==1) | 
     (test_df["downgraded"]==1) | 
@@ -2618,18 +2624,6 @@ def check_churn(userId):
 
 pd_df["user_churned"] = pd_df["userId"].apply(lambda user: check_churn(user))  
 ```
-
-
-
-
-    0    False
-    1    False
-    2    False
-    3     True
-    4    False
-    Name: user_churned, dtype: bool
-
-
 
 
 ```python
@@ -2726,50 +2720,44 @@ value_count.head()
 
 
 
+
+```python
+user_log = test_df
+```
+
 ## Ideas for other features
 * per user: time from registration to last log action
 * existing categorical features with low number of distinct values
 * user interaction over time (number of songs...)
 * tbd
 
+# Feature Engineering
+Once you've familiarized yourself with the data, build out the features you find promising to train your model on. To work with the full dataset, you can follow the following steps.
+- Write a script to extract the necessary features from the smaller subset of data
+- Ensure that your script is scalable, using the best practices discussed in Lesson 3
+- Try your script on the full data set, debugging your script if necessary
+
+If you are working in the classroom workspace, you can just extract features based on the small subset of data contained here. Be sure to transfer over this work to the larger dataset when you work on your Spark cluster.
+
+## Create new dataframe for features bases on userId's
+
 
 ```python
-
+# create new df for features
+all_users_collect = user_log.select("userId").distinct().collect()
+all_users = set([int(row["userId"]) for row in all_users_collect])
+features_df = spark.createDataFrame(all_users, IntegerType()).withColumnRenamed('value', 'userId')
 ```
 
 
 ```python
-
-```
-
-
-```python
-
-```
-
-
-```python
-
-```
-
-# Old code - start +++++++++++++++++++++++
-
-
-```python
-test=user_log_valid
-```
-
-
-```python
-pd_df = test.filter(test["churn"]==1).groupBy("userId").count().orderBy("count").toPandas()
-pd_df["count"].value_counts()
+features_df
 ```
 
 
 
 
-    1    52
-    Name: count, dtype: int64
+    DataFrame[value: int]
 
 
 
@@ -2780,77 +2768,8 @@ pd_df["count"].value_counts()
 
 
 ```python
-# define phase "churn"
-windowval = Window.partitionBy("userId").orderBy(asc("ts")).rangeBetween(Window.unboundedPreceding, 0)
-user_log_valid = user_log_valid.withColumn("churn_phase", Fsum("churn").over(windowval))
-# define phase "churn"
-#windowval = Window.partitionBy("userId").orderBy(desc("ts")).rangeBetween(Window.unboundedPreceding, 0)
-user_log_valid = user_log_valid.withColumn("downgraded_phase", Fsum("downgraded").over(windowval))
+
 ```
-
-
-```python
-user_log_valid.select(["userId", "firstname", "ts", "page", "level", "downgraded_phase", "churn_phase"]).where((user_log_valid.churn_phase == "1") & (user_log_valid.downgraded_phase == "1")).take(3)
-```
-
-
-
-
-    [Row(userId='54', firstname='Alexi', ts=1542051577000, page='Cancel', level='paid', downgraded_phase=1, churn_phase=1),
-     Row(userId='54', firstname='Alexi', ts=1542051608000, page='Cancellation Confirmation', level='paid', downgraded_phase=1, churn_phase=1),
-     Row(userId='100025', firstname='London', ts=1540298979000, page='Cancel', level='free', downgraded_phase=1, churn_phase=1)]
-
-
-
-
-```python
-user_54_pd = user_log_valid.select(["userId", "firstname", "ts", "page", "level", "downgraded_phase", "churn_phase"]).where((user_log_valid.userId == "54")).sort("ts").toPandas()
-```
-
-
-```python
-user_54_pd["level"].value_counts()
-```
-
-
-
-
-    paid    2859
-    free     578
-    Name: level, dtype: int64
-
-
-
-
-```python
-user_54_pd["level"].describe()
-```
-
-
-
-
-    count     3437
-    unique       2
-    top       paid
-    freq      2859
-    Name: level, dtype: object
-
-
-
-
-```python
-plt.scatter(user_54_pd["ts"], user_54_pd["level"])
-#plt.xlim(-1, 24);
-#plt.ylim(0, 1.2 * max(songs_in_hour_pd["count"]))
-plt.xlabel("time in ts")
-plt.ylabel("level");
-```
-
-
-![png](output_82_0.png)
-
-
-# Old code - end +++++++++++++++++++++++
 
 # Modeling
 Split the full dataset into train, test, and validation sets. Test out several of the machine learning methods you learned. Evaluate the accuracy of the various models, tuning parameters as necessary. Determine your winning model based on test accuracy and report results on the validation set. Since the churned users are a fairly small subset, I suggest using F1 score as the metric to optimize.
