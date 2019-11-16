@@ -6,10 +6,55 @@ You can follow the steps below to guide your data analysis and model building po
 
 
 ```python
+# Install additional libraries via pip in the current Jupyter kernel
+import sys
+!{sys.executable} -m pip install pixiedust
+```
+
+    Collecting pixiedust
+    [?25l  Downloading https://files.pythonhosted.org/packages/bc/a8/e84b2ed12ee387589c099734b6f914a520e1fef2733c955982623080e813/pixiedust-1.1.17.tar.gz (197kB)
+    [K    100% |████████████████████████████████| 204kB 17.5MB/s a 0:00:01
+    [?25hCollecting mpld3 (from pixiedust)
+    [?25l  Downloading https://files.pythonhosted.org/packages/91/95/a52d3a83d0a29ba0d6898f6727e9858fe7a43f6c2ce81a5fe7e05f0f4912/mpld3-0.3.tar.gz (788kB)
+    [K    100% |████████████████████████████████| 798kB 14.5MB/s ta 0:00:01
+    [?25hRequirement already satisfied: lxml in /opt/conda/lib/python3.6/site-packages (from pixiedust) (4.1.1)
+    Collecting geojson (from pixiedust)
+      Downloading https://files.pythonhosted.org/packages/e4/8d/9e28e9af95739e6d2d2f8d4bef0b3432da40b7c3588fbad4298c1be09e48/geojson-2.5.0-py2.py3-none-any.whl
+    Collecting astunparse (from pixiedust)
+      Downloading https://files.pythonhosted.org/packages/2e/37/5dd0dd89b87bb5f0f32a7e775458412c52d78f230ab8d0c65df6aabc4479/astunparse-1.6.2-py2.py3-none-any.whl
+    Requirement already satisfied: markdown in /opt/conda/lib/python3.6/site-packages (from pixiedust) (2.6.9)
+    Requirement already satisfied: colour in /opt/conda/lib/python3.6/site-packages (from pixiedust) (0.1.5)
+    Requirement already satisfied: requests in /opt/conda/lib/python3.6/site-packages (from pixiedust) (2.18.4)
+    Requirement already satisfied: wheel<1.0,>=0.23.0 in /opt/conda/lib/python3.6/site-packages (from astunparse->pixiedust) (0.30.0)
+    Requirement already satisfied: six<2.0,>=1.6.1 in /opt/conda/lib/python3.6/site-packages (from astunparse->pixiedust) (1.11.0)
+    Requirement already satisfied: chardet<3.1.0,>=3.0.2 in /opt/conda/lib/python3.6/site-packages (from requests->pixiedust) (3.0.4)
+    Requirement already satisfied: idna<2.7,>=2.5 in /opt/conda/lib/python3.6/site-packages (from requests->pixiedust) (2.6)
+    Requirement already satisfied: urllib3<1.23,>=1.21.1 in /opt/conda/lib/python3.6/site-packages (from requests->pixiedust) (1.22)
+    Requirement already satisfied: certifi>=2017.4.17 in /opt/conda/lib/python3.6/site-packages (from requests->pixiedust) (2017.11.5)
+    Building wheels for collected packages: pixiedust, mpld3
+      Running setup.py bdist_wheel for pixiedust ... [?25ldone
+    [?25h  Stored in directory: /root/.cache/pip/wheels/25/fa/a5/09c1e8f4c91b34c5f7f4ac6e41be81dd0667030a2372546a8d
+      Running setup.py bdist_wheel for mpld3 ... [?25ldone
+    [?25h  Stored in directory: /root/.cache/pip/wheels/c0/47/fb/8a64f89aecfe0059830479308ad42d62e898a3e3cefdf6ba28
+    Successfully built pixiedust mpld3
+    Installing collected packages: mpld3, geojson, astunparse, pixiedust
+    Successfully installed astunparse-1.6.2 geojson-2.5.0 mpld3-0.3 pixiedust-1.1.17
+
+
+
+```python
+pixiedust.optOut()
+```
+
+    Pixiedust will not collect anonymous install statistics.
+
+
+
+```python
 # import libraries
 from pyspark.sql import SparkSession, Window
 
-from pyspark.sql.functions import udf, sum as Fsum, desc, asc, countDistinct, col, to_date, year, month, dayofmonth, minute, hour, datediff, min, max
+from pyspark.sql.functions import udf, sum as Fsum, desc, asc, countDistinct, col, to_date, year, month, dayofmonth, minute, hour, datediff, min, max, isnull
 
 from pyspark.sql.types import IntegerType, DateType, TimestampType, StringType
 
@@ -20,6 +65,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 import datetime
+
+import pixiedust
+
 ```
 
 
@@ -909,7 +957,7 @@ plt.ylabel("page");
 ```
 
 
-![png](output_24_0.png)
+![png](output_26_0.png)
 
 
 
@@ -2357,7 +2405,7 @@ pd_df.plot.line(x="hour", y="count");
 
 
 
-![png](output_46_1.png)
+![png](output_48_1.png)
 
 
 #### (6.1) "registration": analyse spread of date/ time
@@ -2369,7 +2417,7 @@ pd_df.plot.line(x="registration_date", y="count");
 ```
 
 
-![png](output_48_0.png)
+![png](output_50_0.png)
 
 
 #### "ts": further conversion to features for year/ month/ time
@@ -2410,25 +2458,34 @@ If you are working in the classroom workspace, you can just extract features bas
 
 
 ```python
-print("page values with user action put:")
-user_log_valid.filter(user_log_valid["method"]=="PUT").groupBy("page").count().orderBy("count").show()   
+print("page values with user depending on method:")
+user_log_valid.groupBy("method", "page").count().orderBy("method", "count").show()   
 ```
 
-    page values with user action put:
-    +----------------+------+
-    |            page| count|
-    +----------------+------+
-    |          Cancel|    52|
-    |Submit Downgrade|    63|
-    |  Submit Upgrade|   159|
-    |   Save Settings|   310|
-    |     Thumbs Down|  2546|
-    |          Logout|  3226|
-    |      Add Friend|  4277|
-    | Add to Playlist|  6526|
-    |       Thumbs Up| 12551|
-    |        NextSong|228108|
-    +----------------+------+
+    page values with user depending on method:
+    +------+--------------------+------+
+    |method|                page| count|
+    +------+--------------------+------+
+    |   GET|Cancellation Conf...|    52|
+    |   GET|               Error|   252|
+    |   GET|               About|   495|
+    |   GET|             Upgrade|   499|
+    |   GET|                Help|  1454|
+    |   GET|            Settings|  1514|
+    |   GET|           Downgrade|  2055|
+    |   GET|         Roll Advert|  3933|
+    |   GET|                Home| 10082|
+    |   PUT|              Cancel|    52|
+    |   PUT|    Submit Downgrade|    63|
+    |   PUT|      Submit Upgrade|   159|
+    |   PUT|       Save Settings|   310|
+    |   PUT|         Thumbs Down|  2546|
+    |   PUT|              Logout|  3226|
+    |   PUT|          Add Friend|  4277|
+    |   PUT|     Add to Playlist|  6526|
+    |   PUT|           Thumbs Up| 12551|
+    |   PUT|            NextSong|228108|
+    +------+--------------------+------+
     
 
 
@@ -2439,42 +2496,159 @@ user_log_valid.filter(user_log_valid["method"]=="PUT").groupBy("page").count().o
 
 
 ```python
-# define flag downgrade event lambda function
-flag_downgrade_event = udf(lambda page: 1 if page == "Submit Downgrade" else 0, IntegerType())
-user_log_valid = user_log_valid.withColumn("downgraded", flag_downgrade_event("page"))
+def create_page_value_feature(df, page_value, col_name):
+    '''
+    ARGS:
+    OUTPUT
+    
+    Function that creates a new feature from a certain value of feature "page"
+    '''
+    flag_page_value_event = udf(lambda page: 1 if page == page_value else 0, IntegerType())
+    return df.withColumn(col_name, flag_page_value_event("page"))
 ```
 
 
 ```python
-# define feature "churn"
-flag_churn_event = udf(lambda page: 1 if page == "Cancel" else 0, IntegerType())
-user_log_valid = user_log_valid.withColumn("churn", flag_churn_event("page"))
+# testing only
+test_df = user_log_valid
 ```
 
 
 ```python
-# define feature "upgrade"
-flag_upgrade_event = udf(lambda page: 1 if page == "Submit Upgrade" else 0, IntegerType())
-user_log_valid = user_log_valid.withColumn("upgraded", flag_upgrade_event("page"))
+page_value_feature_dict = {"Submit Downgrade" : "downgraded",
+                           "Cancel" : "churn",
+                           "Submit Upgrade" : "upgraded",
+                           "Roll Advert" : "advert_shown",
+                           "Thumbs Down": "thumps_down",
+                           "Thumbs Up": "thumps_up",
+                           "Add Friend": "friend_added",
+                           "Add to Playlist" : "song_added"
+                          }
+
+for page_value in page_value_feature_dict.keys():
+    column_name = page_value_feature_dict[page_value]
+    test_df =  create_page_value_feature(test_df, page_value, column_name)
 ```
+
+
+```python
+test_df.printSchema()
+```
+
+    root
+     |-- artist: string (nullable = true)
+     |-- auth: string (nullable = true)
+     |-- firstName: string (nullable = true)
+     |-- gender: string (nullable = true)
+     |-- itemInSession: long (nullable = true)
+     |-- lastName: string (nullable = true)
+     |-- length: double (nullable = true)
+     |-- level: string (nullable = true)
+     |-- location: string (nullable = true)
+     |-- method: string (nullable = true)
+     |-- page: string (nullable = true)
+     |-- registration: long (nullable = true)
+     |-- sessionId: long (nullable = true)
+     |-- song: string (nullable = true)
+     |-- status: long (nullable = true)
+     |-- ts: long (nullable = true)
+     |-- userAgent: string (nullable = true)
+     |-- userId: string (nullable = true)
+     |-- registration_timestamp: timestamp (nullable = true)
+     |-- ts_timestamp: timestamp (nullable = true)
+     |-- ts_hour: integer (nullable = true)
+     |-- downgraded: integer (nullable = true)
+     |-- churn: integer (nullable = true)
+     |-- upgraded: integer (nullable = true)
+     |-- advert_shown: integer (nullable = true)
+     |-- thumps_down: integer (nullable = true)
+     |-- thumps_up: integer (nullable = true)
+     |-- friend_added: integer (nullable = true)
+     |-- song_added: integer (nullable = true)
+    
+
 
 ### Descriptive analysis on features "downgraded", "upgraded" and "churn"
 
 
 ```python
+test_df.select(subset_list).filter(
+    (test_df["churn"]==1) | 
+    (test_df["downgraded"]==1) | 
+    (test_df["advert_shown"]==1) | 
+    (test_df["thumps_down"]==1) |
+    (test_df["thumps_up"]==1) | 
+    (test_df["friend_added"]==1) |
+    (test_df["song_added"]==1) |
+    (test_df["upgraded"]==1)).count()
+```
+
+
+
+
+    30107
+
+
+
+
+```python
 print("Descriptive Analysis of userId's that churned, downgraded or upgraded")
-pd_df= user_log_valid.select("userId", "churn", "downgraded", "upgraded").filter((user_log_valid["churn"]==1) | (user_log_valid["downgraded"]==1) | (user_log_valid["upgraded"]==1)).toPandas()
-print("value count of downgraded/ upgraded where churn=0")
-value_count = pd_df.pivot_table(index="churn", values=[ "userId", "downgraded", "upgraded"], aggfunc={
-    "userId": "count",
-    "downgraded": np.sum,
-    "upgraded": np.sum
-})
-value_count
+#pd_df= user_log_valid.select("userId", "churn", "downgraded", "upgraded").filter((user_log_valid["churn"]==1) | (user_log_valid["downgraded"]==1) | (user_log_valid["upgraded"]==1)).toPandas()
+subset_list = list(page_value_feature_dict.values())
+subset_list.append("userId")
+#pd_df = test_df.dropna(how = "all", subset = subset_list).toPandas()
+pd_df = test_df.select(subset_list).filter(
+    (test_df["churn"]==1) | 
+    (test_df["downgraded"]==1) | 
+    (test_df["advert_shown"]==1) | 
+    (test_df["thumps_down"]==1) |
+    (test_df["thumps_up"]==1) | 
+    (test_df["friend_added"]==1) |
+    (test_df["song_added"]==1) |
+    (test_df["upgraded"]==1)).toPandas()
 ```
 
     Descriptive Analysis of userId's that churned, downgraded or upgraded
-    value count of downgraded/ upgraded where churn=0
+
+
+
+```python
+def check_churn(userId):
+    return True if (pd_df["churn"][pd_df["userId"]==userId].max() >=1) else False
+
+pd_df["user_churned"] = pd_df["userId"].apply(lambda user: check_churn(user))  
+```
+
+
+
+
+    0    False
+    1    False
+    2    False
+    3     True
+    4    False
+    Name: user_churned, dtype: bool
+
+
+
+
+```python
+print("value count of page value features of users depending on feature churn:")
+value_count = pd_df.pivot_table(index="user_churned", values=subset_list, aggfunc={
+    "userId": pd.Series.nunique,
+    "churn" : np.sum,
+    "downgraded": np.sum,
+    "upgraded": np.sum,
+    'advert_shown': np.sum,
+    'thumps_down': np.sum,
+    'thumps_up': np.sum,
+    'friend_added': np.sum,
+    'song_added': np.sum
+})
+value_count.head()
+```
+
+    value count of page value features of users depending on feature churn:
 
 
 
@@ -2498,12 +2672,24 @@ value_count
   <thead>
     <tr style="text-align: right;">
       <th></th>
+      <th>advert_shown</th>
+      <th>churn</th>
       <th>downgraded</th>
+      <th>friend_added</th>
+      <th>song_added</th>
+      <th>thumps_down</th>
+      <th>thumps_up</th>
       <th>upgraded</th>
       <th>userId</th>
     </tr>
     <tr>
-      <th>churn</th>
+      <th>user_churned</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
       <th></th>
       <th></th>
       <th></th>
@@ -2511,15 +2697,27 @@ value_count
   </thead>
   <tbody>
     <tr>
-      <th>0</th>
-      <td>63</td>
-      <td>159</td>
-      <td>222</td>
+      <th>False</th>
+      <td>2966</td>
+      <td>0</td>
+      <td>54</td>
+      <td>3641</td>
+      <td>5488</td>
+      <td>2050</td>
+      <td>10692</td>
+      <td>127</td>
+      <td>172</td>
     </tr>
     <tr>
-      <th>1</th>
-      <td>0</td>
-      <td>0</td>
+      <th>True</th>
+      <td>967</td>
+      <td>52</td>
+      <td>9</td>
+      <td>636</td>
+      <td>1038</td>
+      <td>496</td>
+      <td>1859</td>
+      <td>32</td>
       <td>52</td>
     </tr>
   </tbody>
@@ -2533,6 +2731,16 @@ value_count
 * existing categorical features with low number of distinct values
 * user interaction over time (number of songs...)
 * tbd
+
+
+```python
+
+```
+
+
+```python
+
+```
 
 
 ```python
@@ -2639,7 +2847,7 @@ plt.ylabel("level");
 ```
 
 
-![png](output_74_0.png)
+![png](output_82_0.png)
 
 
 # Old code - end +++++++++++++++++++++++
@@ -2649,20 +2857,106 @@ Split the full dataset into train, test, and validation sets. Test out several o
 
 
 ```python
+test_df.printSchema()
+```
+
+    root
+     |-- artist: string (nullable = true)
+     |-- auth: string (nullable = true)
+     |-- firstName: string (nullable = true)
+     |-- gender: string (nullable = true)
+     |-- itemInSession: long (nullable = true)
+     |-- lastName: string (nullable = true)
+     |-- length: double (nullable = true)
+     |-- level: string (nullable = true)
+     |-- location: string (nullable = true)
+     |-- method: string (nullable = true)
+     |-- page: string (nullable = true)
+     |-- registration: long (nullable = true)
+     |-- sessionId: long (nullable = true)
+     |-- song: string (nullable = true)
+     |-- status: long (nullable = true)
+     |-- ts: long (nullable = true)
+     |-- userAgent: string (nullable = true)
+     |-- userId: string (nullable = true)
+     |-- registration_timestamp: timestamp (nullable = true)
+     |-- ts_timestamp: timestamp (nullable = true)
+     |-- ts_hour: integer (nullable = true)
+     |-- downgraded: integer (nullable = true)
+     |-- churn: integer (nullable = true)
+     |-- upgraded: integer (nullable = true)
+     |-- advert_shown: integer (nullable = true)
+     |-- thumps_down: integer (nullable = true)
+     |-- thumps_up: integer (nullable = true)
+     |-- friend_added: integer (nullable = true)
+     |-- song_added: integer (nullable = true)
+    
+
+
+
+```python
+model_df = test_df.select("")
+```
+
+## Split in training, test, validation set
+
+
+```python
 #user_log_valid.persist()
 training, test, validation = user_log_valid.randomSplit([0.8, 0.1, 0.1], seed=42)
 ```
+
+## Build Pipeline
 
 
 ```python
 # build pipeline
 
+lr = LogisticRegression(maxIter=10, regParam=0.0, elasticNetParam=0)
+
+pipeline = Pipeline(stages=[lr])
 ```
+
+## Tune Model
 
 
 ```python
 # tune model
+paramGrid = ParamGridBuilder() \
+    .addGrid(lr.regParam,[0.0, 0.1]) \
+    .build()
 
+
+crossval = CrossValidator(estimator=pipeline,
+                          estimatorParamMaps=paramGrid,
+                          evaluator=MulticlassClassificationEvaluator(),
+                          numFolds=3)
+```
+
+
+```python
+cvModel_q1 = crossval.fit(training)
+```
+
+
+```python
+cvModel_q1.avgMetrics
+```
+
+
+```python
+results = cvModel_q1.transform(test)
+```
+
+## Compute Accuracy of Best Model
+
+
+```python
+# TODO: change label or create feature label
+
+correct_results = (results.filter(results.label == results.prediction).count())
+total_results= (results.count())
+accuracy = correct_results/ total_results
 ```
 
 # Final Steps
