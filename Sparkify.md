@@ -6,108 +6,33 @@ You can follow the steps below to guide your data analysis and model building po
 
 
 ```python
-# Install additional libraries via pip in the current Jupyter kernel
-import sys
-!{sys.executable} -m pip install pixiedust
-```
-
-    Collecting pixiedust
-    [?25l  Downloading https://files.pythonhosted.org/packages/bc/a8/e84b2ed12ee387589c099734b6f914a520e1fef2733c955982623080e813/pixiedust-1.1.17.tar.gz (197kB)
-    [K    100% |████████████████████████████████| 204kB 29.2MB/s a 0:00:01
-    [?25hCollecting mpld3 (from pixiedust)
-    [?25l  Downloading https://files.pythonhosted.org/packages/91/95/a52d3a83d0a29ba0d6898f6727e9858fe7a43f6c2ce81a5fe7e05f0f4912/mpld3-0.3.tar.gz (788kB)
-    [K    100% |████████████████████████████████| 798kB 8.9MB/s eta 0:00:01    72% |███████████████████████▎        | 573kB 17.8MB/s eta 0:00:01
-    [?25hRequirement already satisfied: lxml in /opt/conda/lib/python3.6/site-packages (from pixiedust) (4.1.1)
-    Collecting geojson (from pixiedust)
-      Downloading https://files.pythonhosted.org/packages/e4/8d/9e28e9af95739e6d2d2f8d4bef0b3432da40b7c3588fbad4298c1be09e48/geojson-2.5.0-py2.py3-none-any.whl
-    Collecting astunparse (from pixiedust)
-      Downloading https://files.pythonhosted.org/packages/2e/37/5dd0dd89b87bb5f0f32a7e775458412c52d78f230ab8d0c65df6aabc4479/astunparse-1.6.2-py2.py3-none-any.whl
-    Requirement already satisfied: markdown in /opt/conda/lib/python3.6/site-packages (from pixiedust) (2.6.9)
-    Requirement already satisfied: colour in /opt/conda/lib/python3.6/site-packages (from pixiedust) (0.1.5)
-    Requirement already satisfied: requests in /opt/conda/lib/python3.6/site-packages (from pixiedust) (2.18.4)
-    Requirement already satisfied: six<2.0,>=1.6.1 in /opt/conda/lib/python3.6/site-packages (from astunparse->pixiedust) (1.11.0)
-    Requirement already satisfied: wheel<1.0,>=0.23.0 in /opt/conda/lib/python3.6/site-packages (from astunparse->pixiedust) (0.30.0)
-    Requirement already satisfied: chardet<3.1.0,>=3.0.2 in /opt/conda/lib/python3.6/site-packages (from requests->pixiedust) (3.0.4)
-    Requirement already satisfied: idna<2.7,>=2.5 in /opt/conda/lib/python3.6/site-packages (from requests->pixiedust) (2.6)
-    Requirement already satisfied: urllib3<1.23,>=1.21.1 in /opt/conda/lib/python3.6/site-packages (from requests->pixiedust) (1.22)
-    Requirement already satisfied: certifi>=2017.4.17 in /opt/conda/lib/python3.6/site-packages (from requests->pixiedust) (2017.11.5)
-    Building wheels for collected packages: pixiedust, mpld3
-      Running setup.py bdist_wheel for pixiedust ... [?25ldone
-    [?25h  Stored in directory: /root/.cache/pip/wheels/25/fa/a5/09c1e8f4c91b34c5f7f4ac6e41be81dd0667030a2372546a8d
-      Running setup.py bdist_wheel for mpld3 ... [?25ldone
-    [?25h  Stored in directory: /root/.cache/pip/wheels/c0/47/fb/8a64f89aecfe0059830479308ad42d62e898a3e3cefdf6ba28
-    Successfully built pixiedust mpld3
-    Installing collected packages: mpld3, geojson, astunparse, pixiedust
-    Successfully installed astunparse-1.6.2 geojson-2.5.0 mpld3-0.3 pixiedust-1.1.17
-
-
-
-```python
 # import libraries
-from pyspark.sql import SparkSession, Window
-
-from pyspark.sql.functions import udf, sum as Fsum, desc, asc, countDistinct, col, to_date, year, month, dayofmonth, minute, hour, datediff, min, max, isnull
-
-from pyspark.sql.types import IntegerType, DateType, TimestampType, StringType
 
 import numpy as np
 import pandas as pd
+
+from pyspark.sql import SparkSession, Window
+
+from pyspark.sql.functions import udf, sum as Fsum, desc, asc, countDistinct, col, to_date, year, month, dayofmonth, minute, hour, datediff, min, max, isnull, when
+
+from pyspark.sql.types import IntegerType, DateType, TimestampType, StringType, DoubleType
 
 %matplotlib inline
 import matplotlib.pyplot as plt
 
 import datetime
 
-import pixiedust
+from pyspark.ml.feature import VectorAssembler, MinMaxScaler
+from pyspark.ml import Pipeline
+
+from pyspark.ml.evaluation import BinaryClassificationEvaluator
+from pyspark.ml.tuning import ParamGridBuilder, CrossValidator
+from pyspark.ml.classification import LogisticRegression
+
+# for model evaluation
+from sklearn.metrics import f1_score, recall_score, precision_score
 
 ```
-
-    Pixiedust database opened successfully
-    Table VERSION_TRACKER created successfully
-    Table METRICS_TRACKER created successfully
-    
-    Share anonymous install statistics? (opt-out instructions)
-    
-    PixieDust will record metadata on its environment the next time the package is installed or updated. The data is anonymized and aggregated to help plan for future releases, and records only the following values:
-    
-    {
-       "data_sent": currentDate,
-       "runtime": "python",
-       "application_version": currentPixiedustVersion,
-       "space_id": nonIdentifyingUniqueId,
-       "config": {
-           "repository_id": "https://github.com/ibm-watson-data-lab/pixiedust",
-           "target_runtimes": ["Data Science Experience"],
-           "event_id": "web",
-           "event_organizer": "dev-journeys"
-       }
-    }
-    You can opt out by calling pixiedust.optOut() in a new cell.
-
-
-
-
-        <div style="margin:10px">
-            <a href="https://github.com/ibm-watson-data-lab/pixiedust" target="_new">
-                <img src="https://github.com/ibm-watson-data-lab/pixiedust/raw/master/docs/_static/pd_icon32.png" style="float:left;margin-right:10px"/>
-            </a>
-            <span>Pixiedust version 1.1.17</span>
-        </div>
-        
-
-
-    [31mPixiedust runtime updated. Please restart kernel[0m
-    Table USER_PREFERENCES created successfully
-    Table service_connections created successfully
-
-
-
-```python
-pixiedust.optOut()
-```
-
-    Pixiedust will not collect anonymous install statistics.
-
 
 
 ```python
@@ -117,6 +42,42 @@ spark = SparkSession \
     .appName("Sparkify") \
     .getOrCreate()
 ```
+
+
+```python
+# Install additional libraries via pip in the current Jupyter kernel
+import sys
+!{sys.executable} -m pip install pixiedust
+```
+
+    Requirement already satisfied: pixiedust in /opt/conda/lib/python3.6/site-packages (1.1.17)
+    Requirement already satisfied: astunparse in /opt/conda/lib/python3.6/site-packages (from pixiedust) (1.6.2)
+    Requirement already satisfied: markdown in /opt/conda/lib/python3.6/site-packages (from pixiedust) (2.6.9)
+    Requirement already satisfied: lxml in /opt/conda/lib/python3.6/site-packages (from pixiedust) (4.1.1)
+    Requirement already satisfied: colour in /opt/conda/lib/python3.6/site-packages (from pixiedust) (0.1.5)
+    Requirement already satisfied: mpld3 in /opt/conda/lib/python3.6/site-packages (from pixiedust) (0.3)
+    Requirement already satisfied: requests in /opt/conda/lib/python3.6/site-packages (from pixiedust) (2.18.4)
+    Requirement already satisfied: geojson in /opt/conda/lib/python3.6/site-packages (from pixiedust) (2.5.0)
+    Requirement already satisfied: six<2.0,>=1.6.1 in /opt/conda/lib/python3.6/site-packages (from astunparse->pixiedust) (1.11.0)
+    Requirement already satisfied: wheel<1.0,>=0.23.0 in /opt/conda/lib/python3.6/site-packages (from astunparse->pixiedust) (0.30.0)
+    Requirement already satisfied: chardet<3.1.0,>=3.0.2 in /opt/conda/lib/python3.6/site-packages (from requests->pixiedust) (3.0.4)
+    Requirement already satisfied: idna<2.7,>=2.5 in /opt/conda/lib/python3.6/site-packages (from requests->pixiedust) (2.6)
+    Requirement already satisfied: urllib3<1.23,>=1.21.1 in /opt/conda/lib/python3.6/site-packages (from requests->pixiedust) (1.22)
+    Requirement already satisfied: certifi>=2017.4.17 in /opt/conda/lib/python3.6/site-packages (from requests->pixiedust) (2017.11.5)
+
+
+
+```python
+import pixiedust
+```
+
+
+```python
+pixiedust.optOut()
+```
+
+    Pixiedust will not collect anonymous install statistics.
+
 
 # Load and Clean Dataset
 In this workspace, the mini-dataset file is `mini_sparkify_event_data.json`. Load and clean the dataset, checking for invalid or missing data - for example, records without userids or sessionids. 
@@ -991,7 +952,7 @@ plt.ylabel("page");
 ```
 
 
-![png](output_25_0.png)
+![png](output_26_0.png)
 
 
 
@@ -2439,7 +2400,7 @@ pd_df.plot.line(x="hour", y="count");
 
 
 
-![png](output_47_1.png)
+![png](output_48_1.png)
 
 
 #### (6.1) "registration": analyse spread of date/ time
@@ -2451,7 +2412,7 @@ pd_df.plot.line(x="registration_date", y="count");
 ```
 
 
-![png](output_49_0.png)
+![png](output_50_0.png)
 
 
 #### "ts": further conversion to features for year/ month/ time
@@ -2749,17 +2710,107 @@ all_users = set([int(row["userId"]) for row in all_users_collect])
 features_df = spark.createDataFrame(all_users, IntegerType()).withColumnRenamed('value', 'userId')
 ```
 
+## Encode label "churned users"
+
 
 ```python
-features_df
+# create feature "label" for churned users
+churned_users_collect = user_log.select("userId").filter(user_log["churn"]==1).collect()
+churned_users = set([int(row["userId"]) for row in churned_users_collect])
+get_churn = udf(lambda user: 1 if user in churned_users else 0, IntegerType())
+features_df = features_df.withColumn("label", get_churn("userId"))
+```
+
+## Encode features "gender", "level"
+
+### Encode "gender"
+* gender value "M" = value 1
+* gender value "F" = value 0
+
+
+```python
+# one hot encode gender in original df
+one_hot_encode_gender = udf(lambda gender: 1 if gender == "M" else 0, IntegerType())
+user_log = user_log.withColumn("gender_bin", one_hot_encode_gender("gender"))
+```
+
+
+```python
+# join binary gender on userId in features df
+user_gender_selection =  user_log.select(["userId", "gender_bin"]).dropDuplicates(subset=['userId'])
+features_df = features_df.join(user_gender_selection, "userId")
+```
+
+### Encode "level"
+* level value "paid" = value 1
+* level value "free" = value 0
+
+
+```python
+# one hot encode level in original df
+one_hot_encode_level = udf(lambda level: 1 if level == "paid" else 0, IntegerType())
+user_log = user_log.withColumn("level_bin", one_hot_encode_level("level"))
+```
+
+
+```python
+# join binary gender on userId in features df
+user_level_selection =  user_log.select(["userId", "level_bin"]).dropDuplicates(subset=['userId'])
+features_df = features_df.join(user_level_selection, "userId")
+```
+
+## Encode page view features
+* encode count of page view features per userId
+* page view features to be included: 
+['downgraded',
+ 'upgraded',
+ 'advert_shown',
+ 'thumps_down',
+ 'thumps_up',
+ 'friend_added',
+ 'song_added']
+
+
+```python
+# TO BE DELETED +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+page_value_feature_dict = {"Submit Downgrade" : "downgraded",
+                           "Cancel" : "churn",
+                           "Submit Upgrade" : "upgraded",
+                           "Roll Advert" : "advert_shown",
+                           "Thumbs Down": "thumps_down",
+                           "Thumbs Up": "thumps_up",
+                           "Add Friend": "friend_added",
+                           "Add to Playlist" : "song_added"
+                          }
+page_value_feature_dict.pop("Cancel")
+list(page_value_feature_dict.values())
 ```
 
 
 
 
-    DataFrame[value: int]
+    ['downgraded',
+     'upgraded',
+     'advert_shown',
+     'thumps_down',
+     'thumps_up',
+     'friend_added',
+     'song_added']
 
 
+
+
+```python
+page_features_count = user_log.groupBy("userId").sum('downgraded', 'upgraded',
+ 'advert_shown',
+ 'thumps_down',
+ 'thumps_up',
+ 'friend_added',
+ 'song_added')
+features_df = features_df.join(page_features_count, "userId", how="left")
+```
+
+## Encode further features - tbd +++++++++++++
 
 
 ```python
@@ -2771,111 +2822,638 @@ features_df
 
 ```
 
-# Modeling
-Split the full dataset into train, test, and validation sets. Test out several of the machine learning methods you learned. Evaluate the accuracy of the various models, tuning parameters as necessary. Determine your winning model based on test accuracy and report results on the validation set. Since the churned users are a fairly small subset, I suggest using F1 score as the metric to optimize.
+
+```python
+
+```
 
 
 ```python
-test_df.printSchema()
+features_df.printSchema()
 ```
 
     root
-     |-- artist: string (nullable = true)
-     |-- auth: string (nullable = true)
-     |-- firstName: string (nullable = true)
-     |-- gender: string (nullable = true)
-     |-- itemInSession: long (nullable = true)
-     |-- lastName: string (nullable = true)
-     |-- length: double (nullable = true)
-     |-- level: string (nullable = true)
-     |-- location: string (nullable = true)
-     |-- method: string (nullable = true)
-     |-- page: string (nullable = true)
-     |-- registration: long (nullable = true)
-     |-- sessionId: long (nullable = true)
-     |-- song: string (nullable = true)
-     |-- status: long (nullable = true)
-     |-- ts: long (nullable = true)
-     |-- userAgent: string (nullable = true)
-     |-- userId: string (nullable = true)
-     |-- registration_timestamp: timestamp (nullable = true)
-     |-- ts_timestamp: timestamp (nullable = true)
-     |-- ts_hour: integer (nullable = true)
-     |-- downgraded: integer (nullable = true)
-     |-- churn: integer (nullable = true)
-     |-- upgraded: integer (nullable = true)
-     |-- advert_shown: integer (nullable = true)
-     |-- thumps_down: integer (nullable = true)
-     |-- thumps_up: integer (nullable = true)
-     |-- friend_added: integer (nullable = true)
-     |-- song_added: integer (nullable = true)
+     |-- userId: integer (nullable = true)
+     |-- label: integer (nullable = true)
+     |-- gender_bin: integer (nullable = true)
+     |-- level_bin: integer (nullable = true)
+     |-- sum(downgraded): long (nullable = true)
+     |-- sum(upgraded): long (nullable = true)
+     |-- sum(advert_shown): long (nullable = true)
+     |-- sum(thumps_down): long (nullable = true)
+     |-- sum(thumps_up): long (nullable = true)
+     |-- sum(friend_added): long (nullable = true)
+     |-- sum(song_added): long (nullable = true)
     
 
 
 
 ```python
-model_df = test_df.select("")
+pd_df = features_df.toPandas()
+pd_df.describe()
 ```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>userId</th>
+      <th>label</th>
+      <th>gender_bin</th>
+      <th>level_bin</th>
+      <th>sum(downgraded)</th>
+      <th>sum(upgraded)</th>
+      <th>sum(advert_shown)</th>
+      <th>sum(thumps_down)</th>
+      <th>sum(thumps_up)</th>
+      <th>sum(friend_added)</th>
+      <th>sum(song_added)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>count</th>
+      <td>225.000000</td>
+      <td>225.000000</td>
+      <td>225.000000</td>
+      <td>225.000000</td>
+      <td>225.000000</td>
+      <td>225.000000</td>
+      <td>225.000000</td>
+      <td>225.000000</td>
+      <td>225.000000</td>
+      <td>225.000000</td>
+      <td>225.000000</td>
+    </tr>
+    <tr>
+      <th>mean</th>
+      <td>65391.013333</td>
+      <td>0.231111</td>
+      <td>0.537778</td>
+      <td>0.213333</td>
+      <td>0.280000</td>
+      <td>0.706667</td>
+      <td>17.480000</td>
+      <td>11.315556</td>
+      <td>55.782222</td>
+      <td>19.008889</td>
+      <td>29.004444</td>
+    </tr>
+    <tr>
+      <th>std</th>
+      <td>105396.477919</td>
+      <td>0.422483</td>
+      <td>0.499682</td>
+      <td>0.410575</td>
+      <td>0.587671</td>
+      <td>0.733874</td>
+      <td>21.550207</td>
+      <td>13.077481</td>
+      <td>65.477925</td>
+      <td>20.581717</td>
+      <td>32.716654</td>
+    </tr>
+    <tr>
+      <th>min</th>
+      <td>2.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>25%</th>
+      <td>60.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>3.000000</td>
+      <td>2.000000</td>
+      <td>11.000000</td>
+      <td>5.000000</td>
+      <td>6.000000</td>
+    </tr>
+    <tr>
+      <th>50%</th>
+      <td>116.000000</td>
+      <td>0.000000</td>
+      <td>1.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>1.000000</td>
+      <td>11.000000</td>
+      <td>7.000000</td>
+      <td>35.000000</td>
+      <td>14.000000</td>
+      <td>17.000000</td>
+    </tr>
+    <tr>
+      <th>75%</th>
+      <td>100017.000000</td>
+      <td>0.000000</td>
+      <td>1.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>1.000000</td>
+      <td>22.000000</td>
+      <td>16.000000</td>
+      <td>81.000000</td>
+      <td>27.000000</td>
+      <td>44.000000</td>
+    </tr>
+    <tr>
+      <th>max</th>
+      <td>300025.000000</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+      <td>3.000000</td>
+      <td>4.000000</td>
+      <td>128.000000</td>
+      <td>75.000000</td>
+      <td>437.000000</td>
+      <td>143.000000</td>
+      <td>240.000000</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+## Feature scaling and vectorization
+
+
+```python
+features_df.schema.names
+```
+
+
+
+
+    ['userId',
+     'label',
+     'gender_bin',
+     'level_bin',
+     'sum(downgraded)',
+     'sum(upgraded)',
+     'sum(advert_shown)',
+     'sum(thumps_down)',
+     'sum(thumps_up)',
+     'sum(friend_added)',
+     'sum(song_added)',
+     'sum(downgraded)_scaled',
+     'sum(upgraded)_scaled',
+     'sum(advert_shown)_scaled',
+     'sum(thumps_down)_scaled',
+     'sum(thumps_up)_scaled',
+     'sum(friend_added)_scaled',
+     'sum(song_added)_scaled']
+
+
+
+### Vectorize and scale non-binary features
+* Vectorization via VectorAssembler
+* Scaling via MinMaxScaler
+* user Pipeline to combine both in the transformation process
+
+
+```python
+nonbinary_feature_list = ['sum(downgraded)',
+ 'sum(upgraded)',
+ 'sum(advert_shown)',
+ 'sum(thumps_down)',
+ 'sum(thumps_up)',
+ 'sum(friend_added)',
+ 'sum(song_added)']
+```
+
+
+```python
+convert_vector_to_double = udf(lambda vector_value: round(float(list(vector_value)[0]),3), DoubleType())
+
+
+for column in nonbinary_feature_list:
+    # convert column to vector via VectorAssembler
+    assembler = VectorAssembler(inputCols=[column], outputCol=column+"_vect")
+    # Scale vectorized column
+    scaler = MinMaxScaler(inputCol=column+"_vect", outputCol=column+"_scaled")
+    # create Pipeline with assembler and scaler
+    pipeline = Pipeline(stages=[assembler, scaler])
+    # apply pipelien on features_df Dataframe
+    features_df = pipeline.fit(features_df).transform(features_df) \
+    .withColumn(column+"_scaled", convert_vector_to_double(column+"_scaled")).drop(column+"_vect")
+```
+
+
+```python
+features_df.printSchema()
+```
+
+    root
+     |-- userId: integer (nullable = true)
+     |-- label: integer (nullable = true)
+     |-- gender_bin: integer (nullable = true)
+     |-- level_bin: integer (nullable = true)
+     |-- sum(downgraded): long (nullable = true)
+     |-- sum(upgraded): long (nullable = true)
+     |-- sum(advert_shown): long (nullable = true)
+     |-- sum(thumps_down): long (nullable = true)
+     |-- sum(thumps_up): long (nullable = true)
+     |-- sum(friend_added): long (nullable = true)
+     |-- sum(song_added): long (nullable = true)
+     |-- sum(downgraded)_scaled: double (nullable = true)
+     |-- sum(upgraded)_scaled: double (nullable = true)
+     |-- sum(advert_shown)_scaled: double (nullable = true)
+     |-- sum(thumps_down)_scaled: double (nullable = true)
+     |-- sum(thumps_up)_scaled: double (nullable = true)
+     |-- sum(friend_added)_scaled: double (nullable = true)
+     |-- sum(song_added)_scaled: double (nullable = true)
+    
+
+
+### Merge scaled features to one feature vector
+
+
+```python
+# create feature list that shall be merged in on vector
+feature_list = features_df.schema.names
+# remove columns userId, label and all items in nonbinary_feature_list
+remove_features_list= nonbinary_feature_list + ["userId", "label"]
+feature_list = [item for item in feature_list if item not in remove_features_list]
+# assemble features in feature_list to one vector using VectorAssembler
+assembler = VectorAssembler(inputCols=feature_list, outputCol="features")
+features_df = assembler.transform(features_df)
+```
+
+
+```python
+features_df.printSchema()
+```
+
+    root
+     |-- userId: integer (nullable = true)
+     |-- label: integer (nullable = true)
+     |-- gender_bin: integer (nullable = true)
+     |-- level_bin: integer (nullable = true)
+     |-- sum(downgraded): long (nullable = true)
+     |-- sum(upgraded): long (nullable = true)
+     |-- sum(advert_shown): long (nullable = true)
+     |-- sum(thumps_down): long (nullable = true)
+     |-- sum(thumps_up): long (nullable = true)
+     |-- sum(friend_added): long (nullable = true)
+     |-- sum(song_added): long (nullable = true)
+     |-- sum(downgraded)_scaled: double (nullable = true)
+     |-- sum(upgraded)_scaled: double (nullable = true)
+     |-- sum(advert_shown)_scaled: double (nullable = true)
+     |-- sum(thumps_down)_scaled: double (nullable = true)
+     |-- sum(thumps_up)_scaled: double (nullable = true)
+     |-- sum(friend_added)_scaled: double (nullable = true)
+     |-- sum(song_added)_scaled: double (nullable = true)
+     |-- features: vector (nullable = true)
+    
+
+
+# Modeling
+Split the full dataset into train, test, and validation sets. Test out several of the machine learning methods you learned. Evaluate the accuracy of the various models, tuning parameters as necessary. Determine your winning model based on test accuracy and report results on the validation set. Since the churned users are a fairly small subset, I suggest using F1 score as the metric to optimize.
 
 ## Split in training, test, validation set
 
 
 ```python
-#user_log_valid.persist()
-training, test, validation = user_log_valid.randomSplit([0.8, 0.1, 0.1], seed=42)
+train, test = features_df.randomSplit([0.8, 0.2], seed=42)
+
+plt.hist(features_df.toPandas()['label'])
+plt.show()
 ```
 
-## Build Pipeline
+
+![png](output_99_0.png)
+
+
+### Analyze label class imbalance - tbd +++++++++++++
 
 
 ```python
-# build pipeline
+# calculate balancing ratio for account for class imbalance
 
-lr = LogisticRegression(maxIter=10, regParam=0.0, elasticNetParam=0)
+balancing_ratio = train.filter(train['label']==0).count()/train.count()
+train=train.withColumn("classWeights", when(train.label == 1,balancing_ratio).otherwise(1-balancing_ratio))
+```
 
-pipeline = Pipeline(stages=[lr])
+## Machine Learning Model Selection, Tuning and Evaluation
+ * Model learning problem category: supervised learning, logistic regression
+ * ML estimators from pyspark.ml:
+     * LogisticRegression
+     * tbd
+ * ML hyperparameters in estimators (for grid search/ tuning):
+     * LogisticRegression(maxIter=10, regParam=0.0, elasticNetParam=0)
+     * tbd
+ * ML evaluators from pyspark.ml:
+     * BinaryClassificationEvaluator
+     * tbd
+
+
+```python
+# Create a logistic regression object
+lr = LogisticRegression(featuresCol = 'features', labelCol = 'label', weightCol="classWeights")
+
+# create evaluator
+evaluator = BinaryClassificationEvaluator(metricName = 'areaUnderPR')
+
+```
+
+
+```python
+# create lr_model
+lr_model = lr.fit(train)
+training_summary = lr_model.summary
+```
+
+
+```python
+# ToDo: evaluate training summary ++++++++++++++++
+
+# TBD
 ```
 
 ## Tune Model
+* use cross validation via CrossValidator and paramGrid
 
 
 ```python
-# tune model
-paramGrid = ParamGridBuilder() \
-    .addGrid(lr.regParam,[0.0, 0.1]) \
-    .build()
+# build paramGrid and cross validator
+paramGrid = (ParamGridBuilder() \
+    .addGrid(lr.maxIter, [1, 5, 10]) \
+    .addGrid(lr.regParam,[0.01, 0.1, 1.0]) \
+    .addGrid(lr.elasticNetParam, [0.0, 0.5, 1.0]) \
+    .build())
 
 
-crossval = CrossValidator(estimator=pipeline,
+crossval = CrossValidator(estimator=lr,
                           estimatorParamMaps=paramGrid,
-                          evaluator=MulticlassClassificationEvaluator(),
+                          evaluator=evaluator,
                           numFolds=3)
 ```
 
 
 ```python
-cvModel_q1 = crossval.fit(training)
+# run cross validation
+# train model on train data
+crossval_model = crossval.fit(train)
+# predict on test data
+pred = crossval_model.transform(test)
 ```
 
 
 ```python
-cvModel_q1.avgMetrics
+#cvModel_q1 = crossval.fit(training)
 ```
 
 
 ```python
-results = cvModel_q1.transform(test)
+#cvModel_q1.avgMetrics
 ```
 
-## Compute Accuracy of Best Model
+
+```python
+#results = cvModel_q1.transform(test)
+```
+
+## Evaluate results
+* use scikit learn metrics f1, precision, recall for model evaluation
+
+
+```python
+# evaluate results
+pd_pred = pred.toPandas()
+```
+
+
+```python
+pd_pred.head()
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>userId</th>
+      <th>label</th>
+      <th>gender_bin</th>
+      <th>level_bin</th>
+      <th>sum(downgraded)</th>
+      <th>sum(upgraded)</th>
+      <th>sum(advert_shown)</th>
+      <th>sum(thumps_down)</th>
+      <th>sum(thumps_up)</th>
+      <th>sum(friend_added)</th>
+      <th>...</th>
+      <th>sum(upgraded)_scaled</th>
+      <th>sum(advert_shown)_scaled</th>
+      <th>sum(thumps_down)_scaled</th>
+      <th>sum(thumps_up)_scaled</th>
+      <th>sum(friend_added)_scaled</th>
+      <th>sum(song_added)_scaled</th>
+      <th>features</th>
+      <th>rawPrediction</th>
+      <th>probability</th>
+      <th>prediction</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>137</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>10</td>
+      <td>1</td>
+      <td>8</td>
+      <td>8</td>
+      <td>...</td>
+      <td>0.25</td>
+      <td>0.078</td>
+      <td>0.013</td>
+      <td>0.018</td>
+      <td>0.056</td>
+      <td>0.017</td>
+      <td>[1.0, 0.0, 0.0, 0.25, 0.078, 0.013, 0.018, 0.0...</td>
+      <td>[-0.163946421649, 0.163946421649]</td>
+      <td>[0.459104953132, 0.540895046868]</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>65</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>8</td>
+      <td>17</td>
+      <td>111</td>
+      <td>53</td>
+      <td>...</td>
+      <td>0.25</td>
+      <td>0.062</td>
+      <td>0.227</td>
+      <td>0.254</td>
+      <td>0.371</td>
+      <td>0.283</td>
+      <td>[1.0, 0.0, 0.0, 0.25, 0.062, 0.227, 0.254, 0.3...</td>
+      <td>[0.32339930149, -0.32339930149]</td>
+      <td>[0.580152463848, 0.419847536152]</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>133</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>2</td>
+      <td>1</td>
+      <td>...</td>
+      <td>0.00</td>
+      <td>0.008</td>
+      <td>0.000</td>
+      <td>0.005</td>
+      <td>0.007</td>
+      <td>0.013</td>
+      <td>[1.0, 0.0, 0.0, 0.0, 0.008, 0.0, 0.005, 0.007,...</td>
+      <td>[-0.21396771838, 0.21396771838]</td>
+      <td>[0.446711221833, 0.553288778167]</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>78</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>16</td>
+      <td>3</td>
+      <td>11</td>
+      <td>2</td>
+      <td>...</td>
+      <td>0.00</td>
+      <td>0.125</td>
+      <td>0.040</td>
+      <td>0.025</td>
+      <td>0.014</td>
+      <td>0.037</td>
+      <td>[0.0, 0.0, 0.0, 0.0, 0.125, 0.04, 0.025, 0.014...</td>
+      <td>[-0.0548285394792, 0.0548285394792]</td>
+      <td>[0.486296297928, 0.513703702072]</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>76</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>15</td>
+      <td>2</td>
+      <td>13</td>
+      <td>3</td>
+      <td>...</td>
+      <td>0.00</td>
+      <td>0.117</td>
+      <td>0.027</td>
+      <td>0.030</td>
+      <td>0.021</td>
+      <td>0.017</td>
+      <td>[1.0, 0.0, 0.0, 0.0, 0.117, 0.027, 0.03, 0.021...</td>
+      <td>[-0.18192829248, 0.18192829248]</td>
+      <td>[0.454642959836, 0.545357040164]</td>
+      <td>1.0</td>
+    </tr>
+  </tbody>
+</table>
+<p>5 rows × 22 columns</p>
+</div>
+
+
+
+
+```python
+# calculate score for f1, precision, recall
+f1 = f1_score(pd_pred.label, pd_pred.prediction)
+recall = recall_score(pd_pred.label, pd_pred.prediction)
+precision = precision_score(pd_pred.label, pd_pred.prediction)
+```
+
+
+```python
+print("F1 Score: {:.2f}, Recall: {:.2f}, Precision: {:.2f}".format(f1, recall, precision))
+```
+
+    F1 Score: 0.37, Recall: 0.50, Precision: 0.29
+
 
 
 ```python
 # TODO: change label or create feature label
 
-correct_results = (results.filter(results.label == results.prediction).count())
-total_results= (results.count())
-accuracy = correct_results/ total_results
+#correct_results = (results.filter(results.label == results.prediction).count())
+#total_results= (results.count())
+#accuracy = correct_results/ total_results
 ```
 
 # Final Steps
