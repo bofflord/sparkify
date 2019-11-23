@@ -24,8 +24,10 @@ from pyspark.ml.feature import PCA
 This project analyzes customer churn on the example of a fictive music streaming service called "Sparkify". The purpose is to show how such an analysis is done for large datasets by using Spark. The project is part of a Udacity Nanodegree project and thus for educational purposes.
 
 3. File Descriptions
-"Sparkify.ipynb": Jupyter Notebook used for analysis of Sparkify user log data.
-"Sparkify.md!: mark-down version of the Jupyter Notebook for better readability.
+"Sparkify.ipynb": Jupyter Notebook used for analysis of Sparkify user log data on IBM Watson Studio Platform.
+"Sparkify.md": mark-down version of the Jupyter Notebook for better readability.
+"Sparkify_prep.ipynb": Jupyter Notebook used for analysis of Sparkify user log data in Udacity Classroom.
+"Sparkify_prep.md": mark-down version of the Jupyter Notebook for better readability.
 
 4. How to Interact with your project
 Since the main purpose of this analysis is educational, I would really appreciate any feedback on possible improvements in code, modeling and general problem-solving approach. Otherwise it would be may pleasure if my files could serve as orientation or base for other projects. The projects results are the following:
