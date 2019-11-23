@@ -1,8 +1,5 @@
 
 # Sparkify Project Workspace
-This workspace contains a tiny subset (128MB) of the full dataset available (12GB). Feel free to use this workspace to build your project, or to explore a smaller subset with Spark before deploying your cluster on the cloud. Instructions for setting up your Spark cluster is included in the last lesson of the Extracurricular Spark Course content.
-
-You can follow the steps below to guide your data analysis and model building portion of this project.
 
 
 ```python
@@ -35,53 +32,45 @@ from sklearn.metrics import f1_score, recall_score, precision_score
 
 # for Principal Component Analysis
 from pyspark.ml.feature import PCA
-
 ```
+
+# Start SparkSession and load dataset
 
 
 ```python
-# create a Spark session
-spark = SparkSession \
-    .builder \
-    .appName("Sparkify") \
-    .getOrCreate()
+
+import ibmos2spark
+# @hidden_cell
+credentials = {
+    'endpoint': 'https://s3.eu-geo.objectstorage.service.networklayer.com',
+    'service_id': 'iam-ServiceId-f92cad2e-dfc4-460b-b6da-6823a8a1941c',
+    'iam_service_endpoint': 'https://iam.eu-gb.bluemix.net/oidc/token',
+    'api_key': 'Z6Nf1UKJ_bt7cKZvw_EiAHYIoYhtcCpwOmkJJT3Slxy_'
+}
+
+configuration_name = 'os_1647a8daaebd47249daa2481cc9164f0_configs'
+cos = ibmos2spark.CloudObjectStorage(sc, credentials, configuration_name, 'bluemix_cos')
+
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.getOrCreate()
+# Since JSON data can be semi-structured and contain additional metadata, it is possible that you might face issues with the DataFrame layout.
+# Please read the documentation of 'SparkSession.read()' to learn more about the possibilities to adjust the data loading.
+# PySpark documentation: http://spark.apache.org/docs/2.0.2/api/python/pyspark.sql.html#pyspark.sql.DataFrameReader.json
+
+user_log = spark.read.json(cos.url('medium-sparkify-event-data.json', 'sparkify-donotdelete-pr-2exnp1jnopynlt'))
+user_log.take(5)
+
 ```
 
 
-```python
-# Install additional libraries via pip in the current Jupyter kernel
-import sys
-!{sys.executable} -m pip install pixiedust
-```
 
-    Collecting pixiedust
-    [?25l  Downloading https://files.pythonhosted.org/packages/bc/a8/e84b2ed12ee387589c099734b6f914a520e1fef2733c955982623080e813/pixiedust-1.1.17.tar.gz (197kB)
-    [K    100% |████████████████████████████████| 204kB 16.0MB/s a 0:00:01
-    [?25hCollecting mpld3 (from pixiedust)
-    [?25l  Downloading https://files.pythonhosted.org/packages/91/95/a52d3a83d0a29ba0d6898f6727e9858fe7a43f6c2ce81a5fe7e05f0f4912/mpld3-0.3.tar.gz (788kB)
-    [K    100% |████████████████████████████████| 798kB 14.5MB/s ta 0:00:01
-    [?25hRequirement already satisfied: lxml in /opt/conda/lib/python3.6/site-packages (from pixiedust) (4.1.1)
-    Collecting geojson (from pixiedust)
-      Downloading https://files.pythonhosted.org/packages/e4/8d/9e28e9af95739e6d2d2f8d4bef0b3432da40b7c3588fbad4298c1be09e48/geojson-2.5.0-py2.py3-none-any.whl
-    Collecting astunparse (from pixiedust)
-      Downloading https://files.pythonhosted.org/packages/2e/37/5dd0dd89b87bb5f0f32a7e775458412c52d78f230ab8d0c65df6aabc4479/astunparse-1.6.2-py2.py3-none-any.whl
-    Requirement already satisfied: markdown in /opt/conda/lib/python3.6/site-packages (from pixiedust) (2.6.9)
-    Requirement already satisfied: colour in /opt/conda/lib/python3.6/site-packages (from pixiedust) (0.1.5)
-    Requirement already satisfied: requests in /opt/conda/lib/python3.6/site-packages (from pixiedust) (2.18.4)
-    Requirement already satisfied: six<2.0,>=1.6.1 in /opt/conda/lib/python3.6/site-packages (from astunparse->pixiedust) (1.11.0)
-    Requirement already satisfied: wheel<1.0,>=0.23.0 in /opt/conda/lib/python3.6/site-packages (from astunparse->pixiedust) (0.30.0)
-    Requirement already satisfied: chardet<3.1.0,>=3.0.2 in /opt/conda/lib/python3.6/site-packages (from requests->pixiedust) (3.0.4)
-    Requirement already satisfied: idna<2.7,>=2.5 in /opt/conda/lib/python3.6/site-packages (from requests->pixiedust) (2.6)
-    Requirement already satisfied: urllib3<1.23,>=1.21.1 in /opt/conda/lib/python3.6/site-packages (from requests->pixiedust) (1.22)
-    Requirement already satisfied: certifi>=2017.4.17 in /opt/conda/lib/python3.6/site-packages (from requests->pixiedust) (2017.11.5)
-    Building wheels for collected packages: pixiedust, mpld3
-      Running setup.py bdist_wheel for pixiedust ... [?25ldone
-    [?25h  Stored in directory: /root/.cache/pip/wheels/25/fa/a5/09c1e8f4c91b34c5f7f4ac6e41be81dd0667030a2372546a8d
-      Running setup.py bdist_wheel for mpld3 ... [?25ldone
-    [?25h  Stored in directory: /root/.cache/pip/wheels/c0/47/fb/8a64f89aecfe0059830479308ad42d62e898a3e3cefdf6ba28
-    Successfully built pixiedust mpld3
-    Installing collected packages: mpld3, geojson, astunparse, pixiedust
-    Successfully installed astunparse-1.6.2 geojson-2.5.0 mpld3-0.3 pixiedust-1.1.17
+
+    [Row(artist='Martin Orford', auth='Logged In', firstName='Joseph', gender='M', itemInSession=20, lastName='Morales', length=597.55057, level='free', location='Corpus Christi, TX', method='PUT', page='NextSong', registration=1532063507000, sessionId=292, song='Grand Designs', status=200, ts=1538352011000, userAgent='"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"', userId='293'),
+     Row(artist="John Brown's Body", auth='Logged In', firstName='Sawyer', gender='M', itemInSession=74, lastName='Larson', length=380.21179, level='free', location='Houston-The Woodlands-Sugar Land, TX', method='PUT', page='NextSong', registration=1538069638000, sessionId=97, song='Bulls', status=200, ts=1538352025000, userAgent='"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', userId='98'),
+     Row(artist='Afroman', auth='Logged In', firstName='Maverick', gender='M', itemInSession=184, lastName='Santiago', length=202.37016, level='paid', location='Orlando-Kissimmee-Sanford, FL', method='PUT', page='NextSong', registration=1535953455000, sessionId=178, song='Because I Got High', status=200, ts=1538352118000, userAgent='"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', userId='179'),
+     Row(artist=None, auth='Logged In', firstName='Maverick', gender='M', itemInSession=185, lastName='Santiago', length=None, level='paid', location='Orlando-Kissimmee-Sanford, FL', method='PUT', page='Logout', registration=1535953455000, sessionId=178, song=None, status=307, ts=1538352119000, userAgent='"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', userId='179'),
+     Row(artist='Lily Allen', auth='Logged In', firstName='Gianna', gender='F', itemInSession=22, lastName='Campos', length=194.53342, level='paid', location='Mobile, AL', method='PUT', page='NextSong', registration=1535931018000, sessionId=245, song='Smile (Radio Edit)', status=200, ts=1538352124000, userAgent='Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0', userId='246')]
+
 
 
 
@@ -118,7 +107,7 @@ import pixiedust
             <a href="https://github.com/ibm-watson-data-lab/pixiedust" target="_new">
                 <img src="https://github.com/ibm-watson-data-lab/pixiedust/raw/master/docs/_static/pd_icon32.png" style="float:left;margin-right:10px"/>
             </a>
-            <span>Pixiedust version 1.1.17</span>
+            <span>Pixiedust version 1.1.16</span>
         </div>
         
 
@@ -130,6 +119,20 @@ import pixiedust
 
 
 
+<div>Warning: You are not running the latest version of PixieDust. Current is 1.1.16, Latest is 1.1.17</div>
+
+
+
+
+                <div>Please copy and run the following command in a new cell to upgrade: <span style="background-color:#ececec;font-family:monospace;padding:0 5px">!pip install --user --upgrade pixiedust</span></div>
+            
+
+
+
+<div>Please restart kernel after upgrading.</div>
+
+
+
 ```python
 pixiedust.optOut()
 ```
@@ -137,19 +140,4372 @@ pixiedust.optOut()
     Pixiedust will not collect anonymous install statistics.
 
 
-# Load and Clean Dataset
-In this workspace, the mini-dataset file is `mini_sparkify_event_data.json`. Load and clean the dataset, checking for invalid or missing data - for example, records without userids or sessionids. 
+# Explore and clean data set
 
 
 ```python
-path = "mini_sparkify_event_data.json"
-user_log = spark.read.json(path)
-```
-
-
-```python
+# Peek at dataset
 display(user_log)
 ```
+
+
+<style type="text/css">.pd_warning{display:none;}</style><div class="pd_warning"><em>Hey, there's something awesome here! To see it, open this notebook outside GitHub, in a viewer like Jupyter</em></div>
+        <div class="pd_save is-viewer-good" style="padding-right:10px;text-align: center;line-height:initial !important;font-size: xx-large;font-weight: 500;color: coral;">
+            
+        </div>
+    <div id="chartFigure28f0c736" class="pd_save is-viewer-good" style="overflow-x:auto">
+            <style type="text/css" class="pd_save">
+    .df-table-wrapper .panel-heading {
+      border-radius: 0;
+      padding: 0px;
+    }
+    .df-table-wrapper .panel-heading:hover {
+      border-color: #008571;
+    }
+    .df-table-wrapper .panel-title a {
+      background-color: #f9f9fb;
+      color: #333333;
+      display: block;
+      outline: none;
+      padding: 10px 15px;
+      text-decoration: none;
+    }
+    .df-table-wrapper .panel-title a:hover {
+      background-color: #337ab7;
+      border-color: #2e6da4;
+      color: #ffffff;
+      display: block;
+      padding: 10px 15px;
+      text-decoration: none;
+    }
+    .df-table-wrapper {
+      font-size: small;
+      font-weight: 300;
+      letter-spacing: 0.5px;
+      line-height: normal;
+      height: inherit;
+      overflow: auto;
+    }
+    .df-table-search {
+      margin: 0 0 20px 0;
+    }
+    .df-table-search-count {
+      display: inline-block;
+      margin: 0 0 20px 0;
+    }
+    .df-table-container {
+      max-height: 50vh;
+      max-width: 100%;
+      overflow-x: auto;
+      position: relative;
+    }
+    .df-table-wrapper table {
+      border: 0 none #ffffff;
+      border-collapse: collapse;
+      margin: 0;
+      min-width: 100%;
+      padding: 0;
+      table-layout: fixed;
+      height: inherit;
+      overflow: auto;
+    }
+    .df-table-wrapper tr.hidden {
+      display: none;
+    }
+    .df-table-wrapper tr:nth-child(even) {
+      background-color: #f9f9fb;
+    }
+    .df-table-wrapper tr.even {
+      background-color: #f9f9fb;
+    }
+    .df-table-wrapper tr.odd {
+      background-color: #ffffff;
+    }
+    .df-table-wrapper td + td {
+      border-left: 1px solid #e0e0e0;
+    }
+  
+    .df-table-wrapper thead,
+    .fixed-header {
+      font-weight: 600;
+    }
+    .df-table-wrapper tr,
+    .fixed-row {
+      border: 0 none #ffffff;
+      margin: 0;
+      padding: 0;
+    }
+    .df-table-wrapper th,
+    .df-table-wrapper td,
+    .fixed-cell {
+      border: 0 none #ffffff;
+      margin: 0;
+      min-width: 50px;
+      padding: 5px 20px 5px 10px;
+      text-align: left;
+      word-wrap: break-word;
+    }
+    .df-table-wrapper th {
+      padding-bottom: 0;
+      padding-top: 0;
+    }
+    .df-table-wrapper th div {
+      max-height: 1px;
+      visibility: hidden;
+    }
+  
+    .df-schema-field {
+      margin-left: 10px;
+    }
+  
+    .fixed-header-container {
+      overflow: hidden;
+      position: relative;
+    }
+    .fixed-header {
+      border-bottom: 2px solid #000;
+      display: table;
+      position: relative;
+    }
+    .fixed-row {
+      display: table-row;
+    }
+    .fixed-cell {
+      display: table-cell;
+    }
+  </style>
+  
+  
+  <div class="df-table-wrapper df-table-wrapper-28f0c736 panel-group pd_save">
+    <!-- dataframe schema -->
+    
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h4 class="panel-title" style="margin: 0px;">
+          <a data-toggle="collapse" href="#df-schema-28f0c736" data-parent="#df-table-wrapper-28f0c736">Schema</a>
+        </h4>
+      </div>
+      <div id="df-schema-28f0c736" class="panel-collapse collapse">
+        <div class="panel-body" style="font-family: monospace;">
+          <div class="df-schema-fields">
+            <div>Field types:</div>
+            
+              <div class="df-schema-field"><strong>artist: </strong> object</div>
+            
+              <div class="df-schema-field"><strong>auth: </strong> object</div>
+            
+              <div class="df-schema-field"><strong>firstName: </strong> object</div>
+            
+              <div class="df-schema-field"><strong>gender: </strong> object</div>
+            
+              <div class="df-schema-field"><strong>itemInSession: </strong> int64</div>
+            
+              <div class="df-schema-field"><strong>lastName: </strong> object</div>
+            
+              <div class="df-schema-field"><strong>length: </strong> float64</div>
+            
+              <div class="df-schema-field"><strong>level: </strong> object</div>
+            
+              <div class="df-schema-field"><strong>location: </strong> object</div>
+            
+              <div class="df-schema-field"><strong>method: </strong> object</div>
+            
+              <div class="df-schema-field"><strong>page: </strong> object</div>
+            
+              <div class="df-schema-field"><strong>registration: </strong> float64</div>
+            
+              <div class="df-schema-field"><strong>sessionId: </strong> int64</div>
+            
+              <div class="df-schema-field"><strong>song: </strong> object</div>
+            
+              <div class="df-schema-field"><strong>status: </strong> int64</div>
+            
+              <div class="df-schema-field"><strong>ts: </strong> int64</div>
+            
+              <div class="df-schema-field"><strong>userAgent: </strong> object</div>
+            
+              <div class="df-schema-field"><strong>userId: </strong> object</div>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- dataframe table -->
+    <div class="panel panel-default">
+      
+      <div class="panel-heading">
+        <h4 class="panel-title" style="margin: 0px;">
+          <a data-toggle="collapse" href="#df-table-28f0c736" data-parent="#df-table-wrapper-28f0c736"> Table</a>
+        </h4>
+      </div>
+      
+      <div id="df-table-28f0c736" class="panel-collapse collapse in">
+        <div class="panel-body">
+          
+          <input type="text" class="df-table-search form-control input-sm" placeholder="Search table">
+          
+          <div>
+            
+            <span class="df-table-search-count">Showing 100 of 543705 rows</span>
+            
+          </div>
+          <!-- fixed header for when dataframe table scrolls -->
+          <div class="fixed-header-container">
+            <div class="fixed-header">
+              <div class="fixed-row">
+                
+                <div class="fixed-cell">artist</div>
+                
+                <div class="fixed-cell">auth</div>
+                
+                <div class="fixed-cell">firstName</div>
+                
+                <div class="fixed-cell">gender</div>
+                
+                <div class="fixed-cell">itemInSession</div>
+                
+                <div class="fixed-cell">lastName</div>
+                
+                <div class="fixed-cell">length</div>
+                
+                <div class="fixed-cell">level</div>
+                
+                <div class="fixed-cell">location</div>
+                
+                <div class="fixed-cell">method</div>
+                
+                <div class="fixed-cell">page</div>
+                
+                <div class="fixed-cell">registration</div>
+                
+                <div class="fixed-cell">sessionId</div>
+                
+                <div class="fixed-cell">song</div>
+                
+                <div class="fixed-cell">status</div>
+                
+                <div class="fixed-cell">ts</div>
+                
+                <div class="fixed-cell">userAgent</div>
+                
+                <div class="fixed-cell">userId</div>
+                
+              </div>
+            </div>
+          </div>
+          <div class="df-table-container">
+            <table class="df-table">
+              <thead>
+                <tr>
+                  
+                  <th><div>artist</div></th>
+                  
+                  <th><div>auth</div></th>
+                  
+                  <th><div>firstName</div></th>
+                  
+                  <th><div>gender</div></th>
+                  
+                  <th><div>itemInSession</div></th>
+                  
+                  <th><div>lastName</div></th>
+                  
+                  <th><div>length</div></th>
+                  
+                  <th><div>level</div></th>
+                  
+                  <th><div>location</div></th>
+                  
+                  <th><div>method</div></th>
+                  
+                  <th><div>page</div></th>
+                  
+                  <th><div>registration</div></th>
+                  
+                  <th><div>sessionId</div></th>
+                  
+                  <th><div>song</div></th>
+                  
+                  <th><div>status</div></th>
+                  
+                  <th><div>ts</div></th>
+                  
+                  <th><div>userAgent</div></th>
+                  
+                  <th><div>userId</div></th>
+                  
+                </tr>
+              </thead>
+              <tbody>
+                
+                <tr>
+                  
+                  <td>Bob Dylan</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Gianna</td>
+                  
+                  <td>F</td>
+                  
+                  <td>23</td>
+                  
+                  <td>Campos</td>
+                  
+                  <td>256.96608</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Mobile, AL</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1535931018000.0</td>
+                  
+                  <td>245</td>
+                  
+                  <td>Simple Twist Of Fate</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538352318000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>246</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Sawyer</td>
+                  
+                  <td>M</td>
+                  
+                  <td>79</td>
+                  
+                  <td>Larson</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Houston-The Woodlands-Sugar Land, TX</td>
+                  
+                  <td>GET</td>
+                  
+                  <td>Help</td>
+                  
+                  <td>1538069638000.0</td>
+                  
+                  <td>97</td>
+                  
+                  <td>None</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538352947000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>98</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>T.I.</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Alexi</td>
+                  
+                  <td>F</td>
+                  
+                  <td>2</td>
+                  
+                  <td>Warren</td>
+                  
+                  <td>214.77832</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Spokane-Spokane Valley, WA</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1532482662000.0</td>
+                  
+                  <td>53</td>
+                  
+                  <td>Why You Wanna (Amended Album Version)</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538354457000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.1; WOW64; rv:32.0) Gecko/20100101 Firefox/32.0</td>
+                  
+                  <td>54</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>A Perfect Circle</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Joseph</td>
+                  
+                  <td>M</td>
+                  
+                  <td>45</td>
+                  
+                  <td>Morales</td>
+                  
+                  <td>336.48281</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Corpus Christi, TX</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1532063507000.0</td>
+                  
+                  <td>292</td>
+                  
+                  <td>Counting Bodies Like Sheep To The Rhythm Of The War Drums (Explicit Version)</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538355807000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>293</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Toy-Box</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Maverick</td>
+                  
+                  <td>M</td>
+                  
+                  <td>211</td>
+                  
+                  <td>Santiago</td>
+                  
+                  <td>217.02485</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Orlando-Kissimmee-Sanford, FL</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1535953455000.0</td>
+                  
+                  <td>178</td>
+                  
+                  <td>Earth_ Wind_ Water &amp; Fire</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538357005000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>179</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Brad Paisley With Andy Griffith</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Alex</td>
+                  
+                  <td>M</td>
+                  
+                  <td>9</td>
+                  
+                  <td>Hogan</td>
+                  
+                  <td>302.70649</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Denver-Aurora-Lakewood, CO</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1535066380000.0</td>
+                  
+                  <td>100</td>
+                  
+                  <td>Waitin' On A Woman</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538360408000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>101</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Anthony</td>
+                  
+                  <td>M</td>
+                  
+                  <td>27</td>
+                  
+                  <td>Reed</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Miami-Fort Lauderdale-West Palm Beach, FL</td>
+                  
+                  <td>GET</td>
+                  
+                  <td>Home</td>
+                  
+                  <td>1534823030000.0</td>
+                  
+                  <td>511</td>
+                  
+                  <td>None</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538364430000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>166</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Erin Bode</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Ashlynn</td>
+                  
+                  <td>F</td>
+                  
+                  <td>33</td>
+                  
+                  <td>Williams</td>
+                  
+                  <td>252.05506</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Tallahassee, FL</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1537365219000.0</td>
+                  
+                  <td>427</td>
+                  
+                  <td>Here_ There And Everywhere</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538365423000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36"</td>
+                  
+                  <td>74</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Soundgarden</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Maverick</td>
+                  
+                  <td>M</td>
+                  
+                  <td>249</td>
+                  
+                  <td>Santiago</td>
+                  
+                  <td>290.11546</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Orlando-Kissimmee-Sanford, FL</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1535953455000.0</td>
+                  
+                  <td>178</td>
+                  
+                  <td>Burden In My Hand</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538365457000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>179</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Five Iron Frenzy</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Carter</td>
+                  
+                  <td>M</td>
+                  
+                  <td>31</td>
+                  
+                  <td>Cook</td>
+                  
+                  <td>236.09424</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Chicago-Naperville-Elgin, IL-IN-WI</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1522793334000.0</td>
+                  
+                  <td>287</td>
+                  
+                  <td>Canada</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538366146000</td>
+                  
+                  <td>"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53"</td>
+                  
+                  <td>288</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Amos Lee</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Teagan</td>
+                  
+                  <td>F</td>
+                  
+                  <td>27</td>
+                  
+                  <td>Roberts</td>
+                  
+                  <td>169.79546</td>
+                  
+                  <td>free</td>
+                  
+                  <td>New Philadelphia-Dover, OH</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1537634865000.0</td>
+                  
+                  <td>27</td>
+                  
+                  <td>Better Days</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538367062000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko</td>
+                  
+                  <td>28</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Caleb</td>
+                  
+                  <td>M</td>
+                  
+                  <td>28</td>
+                  
+                  <td>Lane</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>free</td>
+                  
+                  <td>San Francisco-Oakland-Hayward, CA</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>Add Friend</td>
+                  
+                  <td>1536756625000.0</td>
+                  
+                  <td>281</td>
+                  
+                  <td>None</td>
+                  
+                  <td>307</td>
+                  
+                  <td>1538369176000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>282</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Maverick</td>
+                  
+                  <td>M</td>
+                  
+                  <td>270</td>
+                  
+                  <td>Santiago</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Orlando-Kissimmee-Sanford, FL</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>Thumbs Up</td>
+                  
+                  <td>1535953455000.0</td>
+                  
+                  <td>178</td>
+                  
+                  <td>None</td>
+                  
+                  <td>307</td>
+                  
+                  <td>1538369208000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>179</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Destiny's Child</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Teagan</td>
+                  
+                  <td>F</td>
+                  
+                  <td>38</td>
+                  
+                  <td>Roberts</td>
+                  
+                  <td>271.33342</td>
+                  
+                  <td>free</td>
+                  
+                  <td>New Philadelphia-Dover, OH</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1537634865000.0</td>
+                  
+                  <td>27</td>
+                  
+                  <td>Say My Name</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538369299000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko</td>
+                  
+                  <td>28</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Shinedown</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Adriel</td>
+                  
+                  <td>M</td>
+                  
+                  <td>2</td>
+                  
+                  <td>Mendoza</td>
+                  
+                  <td>233.97832</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Kansas City, MO-KS</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1535623466000.0</td>
+                  
+                  <td>476</td>
+                  
+                  <td>Sound Of Madness (Album Version)</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538369966000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.77.4 (KHTML, like Gecko) Version/7.0.5 Safari/537.77.4"</td>
+                  
+                  <td>18</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Warren Zevon</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Gianna</td>
+                  
+                  <td>F</td>
+                  
+                  <td>119</td>
+                  
+                  <td>Campos</td>
+                  
+                  <td>201.63873</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Mobile, AL</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1535931018000.0</td>
+                  
+                  <td>245</td>
+                  
+                  <td>Mr. Bad Example</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538370448000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>246</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Jack Johnson</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Aurora</td>
+                  
+                  <td>F</td>
+                  
+                  <td>45</td>
+                  
+                  <td>Humphrey</td>
+                  
+                  <td>137.50812</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Dallas-Fort Worth-Arlington, TX</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1536795126000.0</td>
+                  
+                  <td>418</td>
+                  
+                  <td>We're Going To Be Friends</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538373179000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>127</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>The Trews</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Carter</td>
+                  
+                  <td>M</td>
+                  
+                  <td>67</td>
+                  
+                  <td>Cook</td>
+                  
+                  <td>200.80281</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Chicago-Naperville-Elgin, IL-IN-WI</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1522793334000.0</td>
+                  
+                  <td>287</td>
+                  
+                  <td>I Can't Stop Laughing</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538373436000</td>
+                  
+                  <td>"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53"</td>
+                  
+                  <td>288</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Train</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Lucas</td>
+                  
+                  <td>M</td>
+                  
+                  <td>90</td>
+                  
+                  <td>Decker</td>
+                  
+                  <td>205.45261</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Los Angeles-Long Beach-Anaheim, CA</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1534945722000.0</td>
+                  
+                  <td>222</td>
+                  
+                  <td>Marry Me</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538373696000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; rv:11.0) like Gecko</td>
+                  
+                  <td>223</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>J-Kwon</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Jhaden</td>
+                  
+                  <td>M</td>
+                  
+                  <td>61</td>
+                  
+                  <td>Cooper</td>
+                  
+                  <td>243.01669</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Knoxville, TN</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1536859413000.0</td>
+                  
+                  <td>249</td>
+                  
+                  <td>Tipsy</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538374479000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>250</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Erasure</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Faigy</td>
+                  
+                  <td>F</td>
+                  
+                  <td>6</td>
+                  
+                  <td>Howe</td>
+                  
+                  <td>236.45995</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Phoenix-Mesa-Scottsdale, AZ</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1538211832000.0</td>
+                  
+                  <td>492</td>
+                  
+                  <td>Love To Hate You</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538374528000</td>
+                  
+                  <td>Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>95</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Faigy</td>
+                  
+                  <td>F</td>
+                  
+                  <td>7</td>
+                  
+                  <td>Howe</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Phoenix-Mesa-Scottsdale, AZ</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>Thumbs Up</td>
+                  
+                  <td>1538211832000.0</td>
+                  
+                  <td>492</td>
+                  
+                  <td>None</td>
+                  
+                  <td>307</td>
+                  
+                  <td>1538374529000</td>
+                  
+                  <td>Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>95</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Justin Timberlake</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Grant</td>
+                  
+                  <td>M</td>
+                  
+                  <td>22</td>
+                  
+                  <td>Flores</td>
+                  
+                  <td>277.9424</td>
+                  
+                  <td>free</td>
+                  
+                  <td>New York-Newark-Jersey City, NY-NJ-PA</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1538120859000.0</td>
+                  
+                  <td>141</td>
+                  
+                  <td>LoveStoned/I Think She Knows</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538375188000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>142</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Daft Punk</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Aurora</td>
+                  
+                  <td>F</td>
+                  
+                  <td>63</td>
+                  
+                  <td>Humphrey</td>
+                  
+                  <td>418.55955</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Dallas-Fort Worth-Arlington, TX</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1536795126000.0</td>
+                  
+                  <td>418</td>
+                  
+                  <td>Face To Face (Demon Remix)</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538375189000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>127</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Mariah Carey Featuring Busta Rhymes_ Fabulous And  DJ Clue</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Carter</td>
+                  
+                  <td>M</td>
+                  
+                  <td>78</td>
+                  
+                  <td>Cook</td>
+                  
+                  <td>403.35628</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Chicago-Naperville-Elgin, IL-IN-WI</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1522793334000.0</td>
+                  
+                  <td>287</td>
+                  
+                  <td>Last Night A DJ Saved My Life</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538375811000</td>
+                  
+                  <td>"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53"</td>
+                  
+                  <td>288</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Rosana</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Jessiah</td>
+                  
+                  <td>M</td>
+                  
+                  <td>17</td>
+                  
+                  <td>Rose</td>
+                  
+                  <td>282.43546</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Richmond, VA</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1532413080000.0</td>
+                  
+                  <td>529</td>
+                  
+                  <td>SoÃÂ±are</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538375844000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>207</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Opio</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Adriel</td>
+                  
+                  <td>M</td>
+                  
+                  <td>43</td>
+                  
+                  <td>Mendoza</td>
+                  
+                  <td>168.56771</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Kansas City, MO-KS</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1535623466000.0</td>
+                  
+                  <td>476</td>
+                  
+                  <td>The Grassy Knoll</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538377774000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.77.4 (KHTML, like Gecko) Version/7.0.5 Safari/537.77.4"</td>
+                  
+                  <td>18</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Jhaden</td>
+                  
+                  <td>M</td>
+                  
+                  <td>83</td>
+                  
+                  <td>Cooper</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Knoxville, TN</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>Thumbs Up</td>
+                  
+                  <td>1536859413000.0</td>
+                  
+                  <td>249</td>
+                  
+                  <td>None</td>
+                  
+                  <td>307</td>
+                  
+                  <td>1538378466000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>250</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>SUPREME BEINGS OF LEISURE</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Adriel</td>
+                  
+                  <td>M</td>
+                  
+                  <td>53</td>
+                  
+                  <td>Mendoza</td>
+                  
+                  <td>206.34077</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Kansas City, MO-KS</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1535623466000.0</td>
+                  
+                  <td>476</td>
+                  
+                  <td>This World (Album Version)</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538379721000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.77.4 (KHTML, like Gecko) Version/7.0.5 Safari/537.77.4"</td>
+                  
+                  <td>18</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Crosby_ Stills_ Nash and Young</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Kee</td>
+                  
+                  <td>M</td>
+                  
+                  <td>11</td>
+                  
+                  <td>Taylor</td>
+                  
+                  <td>39.60118</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Virginia Beach-Norfolk-Newport News, VA-NC</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1533764798000.0</td>
+                  
+                  <td>522</td>
+                  
+                  <td>Woodstock</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538381885000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>196</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Gianna</td>
+                  
+                  <td>F</td>
+                  
+                  <td>195</td>
+                  
+                  <td>Campos</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Mobile, AL</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>Thumbs Down</td>
+                  
+                  <td>1535931018000.0</td>
+                  
+                  <td>245</td>
+                  
+                  <td>None</td>
+                  
+                  <td>307</td>
+                  
+                  <td>1538382975000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>246</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Langtry and the Pocket-Sized Planets</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Kee</td>
+                  
+                  <td>M</td>
+                  
+                  <td>26</td>
+                  
+                  <td>Taylor</td>
+                  
+                  <td>272.79628</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Virginia Beach-Norfolk-Newport News, VA-NC</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1533764798000.0</td>
+                  
+                  <td>522</td>
+                  
+                  <td>Sampler</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538385033000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>196</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>The Knife</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Kee</td>
+                  
+                  <td>M</td>
+                  
+                  <td>29</td>
+                  
+                  <td>Taylor</td>
+                  
+                  <td>292.54485</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Virginia Beach-Norfolk-Newport News, VA-NC</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1533764798000.0</td>
+                  
+                  <td>522</td>
+                  
+                  <td>Silent Shout</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538385441000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>196</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Pamela Williams</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Jhaden</td>
+                  
+                  <td>M</td>
+                  
+                  <td>112</td>
+                  
+                  <td>Cooper</td>
+                  
+                  <td>289.27955</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Knoxville, TN</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1536859413000.0</td>
+                  
+                  <td>249</td>
+                  
+                  <td>Escape To Paradise</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538385589000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>250</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Evan</td>
+                  
+                  <td>M</td>
+                  
+                  <td>2</td>
+                  
+                  <td>Shelton</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Hagerstown-Martinsburg, MD-WV</td>
+                  
+                  <td>GET</td>
+                  
+                  <td>Home</td>
+                  
+                  <td>1534894284000.0</td>
+                  
+                  <td>479</td>
+                  
+                  <td>None</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538386563000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>251</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Harmonia</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Teagan</td>
+                  
+                  <td>F</td>
+                  
+                  <td>143</td>
+                  
+                  <td>Roberts</td>
+                  
+                  <td>655.77751</td>
+                  
+                  <td>free</td>
+                  
+                  <td>New Philadelphia-Dover, OH</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1537634865000.0</td>
+                  
+                  <td>27</td>
+                  
+                  <td>Sehr kosmisch</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538389869000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko</td>
+                  
+                  <td>28</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Jackson</td>
+                  
+                  <td>M</td>
+                  
+                  <td>5</td>
+                  
+                  <td>Hoffman</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Los Angeles-Long Beach-Anaheim, CA</td>
+                  
+                  <td>GET</td>
+                  
+                  <td>Home</td>
+                  
+                  <td>1537054964000.0</td>
+                  
+                  <td>184</td>
+                  
+                  <td>None</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538389990000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko</td>
+                  
+                  <td>185</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Justin Bieber</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Teagan</td>
+                  
+                  <td>F</td>
+                  
+                  <td>147</td>
+                  
+                  <td>Roberts</td>
+                  
+                  <td>220.89098</td>
+                  
+                  <td>free</td>
+                  
+                  <td>New Philadelphia-Dover, OH</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1537634865000.0</td>
+                  
+                  <td>27</td>
+                  
+                  <td>Somebody To Love</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538390760000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko</td>
+                  
+                  <td>28</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>La Shica</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Emily</td>
+                  
+                  <td>F</td>
+                  
+                  <td>13</td>
+                  
+                  <td>Williams</td>
+                  
+                  <td>245.68118</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Austin-Round Rock, TX</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1536852701000.0</td>
+                  
+                  <td>172</td>
+                  
+                  <td>Madre</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538391186000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>173</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Evan</td>
+                  
+                  <td>M</td>
+                  
+                  <td>35</td>
+                  
+                  <td>Shelton</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Hagerstown-Martinsburg, MD-WV</td>
+                  
+                  <td>GET</td>
+                  
+                  <td>Home</td>
+                  
+                  <td>1534894284000.0</td>
+                  
+                  <td>479</td>
+                  
+                  <td>None</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538392399000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>251</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Dam Funk</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Jackson</td>
+                  
+                  <td>M</td>
+                  
+                  <td>19</td>
+                  
+                  <td>Hoffman</td>
+                  
+                  <td>199.05261</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Los Angeles-Long Beach-Anaheim, CA</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1537054964000.0</td>
+                  
+                  <td>184</td>
+                  
+                  <td>Mirrors</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538392832000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko</td>
+                  
+                  <td>185</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Brayden</td>
+                  
+                  <td>M</td>
+                  
+                  <td>30</td>
+                  
+                  <td>Thomas</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Los Angeles-Long Beach-Anaheim, CA</td>
+                  
+                  <td>GET</td>
+                  
+                  <td>Home</td>
+                  
+                  <td>1534133898000.0</td>
+                  
+                  <td>498</td>
+                  
+                  <td>None</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538393595000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>85</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged Out</td>
+                  
+                  <td>None</td>
+                  
+                  <td>None</td>
+                  
+                  <td>34</td>
+                  
+                  <td>None</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>free</td>
+                  
+                  <td>None</td>
+                  
+                  <td>GET</td>
+                  
+                  <td>Home</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>498</td>
+                  
+                  <td>None</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538394116000</td>
+                  
+                  <td>None</td>
+                  
+                  <td></td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Payton</td>
+                  
+                  <td>F</td>
+                  
+                  <td>12</td>
+                  
+                  <td>Campbell</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Los Angeles-Long Beach-Anaheim, CA</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>Thumbs Up</td>
+                  
+                  <td>1529027541000.0</td>
+                  
+                  <td>518</td>
+                  
+                  <td>None</td>
+                  
+                  <td>307</td>
+                  
+                  <td>1538394715000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.103 Safari/537.36"</td>
+                  
+                  <td>39</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Daelin</td>
+                  
+                  <td>M</td>
+                  
+                  <td>46</td>
+                  
+                  <td>Turner</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>free</td>
+                  
+                  <td>New York-Newark-Jersey City, NY-NJ-PA</td>
+                  
+                  <td>GET</td>
+                  
+                  <td>Home</td>
+                  
+                  <td>1538227408000.0</td>
+                  
+                  <td>125</td>
+                  
+                  <td>None</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538395085000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36"</td>
+                  
+                  <td>126</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>RIP SLYME</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Faigy</td>
+                  
+                  <td>F</td>
+                  
+                  <td>120</td>
+                  
+                  <td>Howe</td>
+                  
+                  <td>283.21914</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Phoenix-Mesa-Scottsdale, AZ</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1538211832000.0</td>
+                  
+                  <td>492</td>
+                  
+                  <td>FUNKASTIC</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538398172000</td>
+                  
+                  <td>Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>95</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Belle &amp; Sebastian</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Kee</td>
+                  
+                  <td>M</td>
+                  
+                  <td>9</td>
+                  
+                  <td>Taylor</td>
+                  
+                  <td>157.70077</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Virginia Beach-Norfolk-Newport News, VA-NC</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1533764798000.0</td>
+                  
+                  <td>547</td>
+                  
+                  <td>(I Believe In) Travellin' Light</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538399579000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>196</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Kee</td>
+                  
+                  <td>M</td>
+                  
+                  <td>11</td>
+                  
+                  <td>Taylor</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Virginia Beach-Norfolk-Newport News, VA-NC</td>
+                  
+                  <td>GET</td>
+                  
+                  <td>Roll Advert</td>
+                  
+                  <td>1533764798000.0</td>
+                  
+                  <td>547</td>
+                  
+                  <td>None</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538400080000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>196</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Faigy</td>
+                  
+                  <td>F</td>
+                  
+                  <td>133</td>
+                  
+                  <td>Howe</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Phoenix-Mesa-Scottsdale, AZ</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>Logout</td>
+                  
+                  <td>1538211832000.0</td>
+                  
+                  <td>492</td>
+                  
+                  <td>None</td>
+                  
+                  <td>307</td>
+                  
+                  <td>1538400628000</td>
+                  
+                  <td>Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>95</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Ethan</td>
+                  
+                  <td>M</td>
+                  
+                  <td>7</td>
+                  
+                  <td>Raymond</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Hartford-West Hartford-East Hartford, CT</td>
+                  
+                  <td>GET</td>
+                  
+                  <td>Upgrade</td>
+                  
+                  <td>1534245996000.0</td>
+                  
+                  <td>26</td>
+                  
+                  <td>None</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538401345000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>27</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>The Ordinary Boys</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Payton</td>
+                  
+                  <td>F</td>
+                  
+                  <td>47</td>
+                  
+                  <td>Campbell</td>
+                  
+                  <td>162.87302</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Los Angeles-Long Beach-Anaheim, CA</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1529027541000.0</td>
+                  
+                  <td>518</td>
+                  
+                  <td>Boys Will Be Boys</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538401359000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.103 Safari/537.36"</td>
+                  
+                  <td>39</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Beanfield feat. Bajka</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Faigy</td>
+                  
+                  <td>F</td>
+                  
+                  <td>152</td>
+                  
+                  <td>Howe</td>
+                  
+                  <td>594.20689</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Phoenix-Mesa-Scottsdale, AZ</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1538211832000.0</td>
+                  
+                  <td>492</td>
+                  
+                  <td>Tides (C's Movement #1)</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538403625000</td>
+                  
+                  <td>Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>95</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>ARRESTED DEVELOPMENT</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Molly</td>
+                  
+                  <td>F</td>
+                  
+                  <td>11</td>
+                  
+                  <td>Harrison</td>
+                  
+                  <td>200.98567</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Virginia Beach-Norfolk-Newport News, VA-NC</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1534255113000.0</td>
+                  
+                  <td>142</td>
+                  
+                  <td>Fountain Of Youth</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538404041000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>143</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Every Time I Die</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Ethan</td>
+                  
+                  <td>M</td>
+                  
+                  <td>32</td>
+                  
+                  <td>Raymond</td>
+                  
+                  <td>172.64281</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Hartford-West Hartford-East Hartford, CT</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1534245996000.0</td>
+                  
+                  <td>26</td>
+                  
+                  <td>The New Black</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538406621000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>27</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>The Gerbils</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Ethan</td>
+                  
+                  <td>M</td>
+                  
+                  <td>35</td>
+                  
+                  <td>Raymond</td>
+                  
+                  <td>27.01016</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Hartford-West Hartford-East Hartford, CT</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1534245996000.0</td>
+                  
+                  <td>26</td>
+                  
+                  <td>(iii)</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538407271000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>27</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Avenged Sevenfold</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Lucero</td>
+                  
+                  <td>F</td>
+                  
+                  <td>10</td>
+                  
+                  <td>Reed</td>
+                  
+                  <td>333.13914</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Louisville/Jefferson County, KY-IN</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1536642109000.0</td>
+                  
+                  <td>139</td>
+                  
+                  <td>Seize The Day (Album Version)</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538407295000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>140</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Eva Cassidy</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Ethan</td>
+                  
+                  <td>M</td>
+                  
+                  <td>39</td>
+                  
+                  <td>Raymond</td>
+                  
+                  <td>146.28526</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Hartford-West Hartford-East Hartford, CT</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1534245996000.0</td>
+                  
+                  <td>26</td>
+                  
+                  <td>Way Beyond The Blue (Album Version)</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538407948000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>27</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Kent</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Ethan</td>
+                  
+                  <td>M</td>
+                  
+                  <td>41</td>
+                  
+                  <td>Raymond</td>
+                  
+                  <td>407.71873</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Hartford-West Hartford-East Hartford, CT</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1534245996000.0</td>
+                  
+                  <td>26</td>
+                  
+                  <td>Vals fÃÂ¶r satan (din vÃÂ¤n pessimisten)</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538408373000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>27</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Bryson</td>
+                  
+                  <td>M</td>
+                  
+                  <td>17</td>
+                  
+                  <td>Roberson</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Houston-The Woodlands-Sugar Land, TX</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>Add to Playlist</td>
+                  
+                  <td>1521380675000.0</td>
+                  
+                  <td>5</td>
+                  
+                  <td>None</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538409683000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>6</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Evanescence</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Ethan</td>
+                  
+                  <td>M</td>
+                  
+                  <td>46</td>
+                  
+                  <td>Raymond</td>
+                  
+                  <td>236.12036</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Hartford-West Hartford-East Hartford, CT</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1534245996000.0</td>
+                  
+                  <td>26</td>
+                  
+                  <td>Bring Me To Life</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538409955000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>27</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>La Rue Ketanou</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Gianna</td>
+                  
+                  <td>F</td>
+                  
+                  <td>68</td>
+                  
+                  <td>Campos</td>
+                  
+                  <td>205.08689</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Mobile, AL</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1535931018000.0</td>
+                  
+                  <td>548</td>
+                  
+                  <td>Les derniers aventuriers</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538410390000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>246</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Morgan</td>
+                  
+                  <td>F</td>
+                  
+                  <td>2</td>
+                  
+                  <td>Reid</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Boston-Cambridge-Newton, MA-NH</td>
+                  
+                  <td>GET</td>
+                  
+                  <td>Roll Advert</td>
+                  
+                  <td>1537263152000.0</td>
+                  
+                  <td>441</td>
+                  
+                  <td>None</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538410573000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko</td>
+                  
+                  <td>274</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Biosphere</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Gianna</td>
+                  
+                  <td>F</td>
+                  
+                  <td>69</td>
+                  
+                  <td>Campos</td>
+                  
+                  <td>189.85751</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Mobile, AL</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1535931018000.0</td>
+                  
+                  <td>548</td>
+                  
+                  <td>Two Ocean Plateau</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538410595000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>246</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Miles Davis</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Bryson</td>
+                  
+                  <td>M</td>
+                  
+                  <td>22</td>
+                  
+                  <td>Roberson</td>
+                  
+                  <td>627.9571</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Houston-The Woodlands-Sugar Land, TX</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1521380675000.0</td>
+                  
+                  <td>5</td>
+                  
+                  <td>Basin Street Blues</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538410778000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>6</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Bryson</td>
+                  
+                  <td>M</td>
+                  
+                  <td>23</td>
+                  
+                  <td>Roberson</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Houston-The Woodlands-Sugar Land, TX</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>Thumbs Up</td>
+                  
+                  <td>1521380675000.0</td>
+                  
+                  <td>5</td>
+                  
+                  <td>None</td>
+                  
+                  <td>307</td>
+                  
+                  <td>1538410779000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>6</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Heartsrevolution</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Gianna</td>
+                  
+                  <td>F</td>
+                  
+                  <td>80</td>
+                  
+                  <td>Campos</td>
+                  
+                  <td>147.59138</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Mobile, AL</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1535931018000.0</td>
+                  
+                  <td>548</td>
+                  
+                  <td>????????</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538411733000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>246</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Spor</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Nicole</td>
+                  
+                  <td>F</td>
+                  
+                  <td>24</td>
+                  
+                  <td>Beck</td>
+                  
+                  <td>281.10322</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Vineland-Bridgeton, NJ</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1532224335000.0</td>
+                  
+                  <td>123</td>
+                  
+                  <td>Knock You Down</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538412528000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>124</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Larry Norman</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Bryson</td>
+                  
+                  <td>M</td>
+                  
+                  <td>32</td>
+                  
+                  <td>Roberson</td>
+                  
+                  <td>364.45995</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Houston-The Woodlands-Sugar Land, TX</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1521380675000.0</td>
+                  
+                  <td>5</td>
+                  
+                  <td>I Am the Six O'Clock News</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538412857000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>6</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Scooter</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Ethan</td>
+                  
+                  <td>M</td>
+                  
+                  <td>60</td>
+                  
+                  <td>Raymond</td>
+                  
+                  <td>235.4673</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Hartford-West Hartford-East Hartford, CT</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1534245996000.0</td>
+                  
+                  <td>26</td>
+                  
+                  <td>The Logical Song</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538413008000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>27</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>BjÃÂ¶rk</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Nicole</td>
+                  
+                  <td>F</td>
+                  
+                  <td>30</td>
+                  
+                  <td>Beck</td>
+                  
+                  <td>348.57751</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Vineland-Bridgeton, NJ</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1532224335000.0</td>
+                  
+                  <td>123</td>
+                  
+                  <td>Undo</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538413887000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>124</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Madelyn</td>
+                  
+                  <td>F</td>
+                  
+                  <td>7</td>
+                  
+                  <td>Henson</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Charlotte-Concord-Gastonia, NC-SC</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>Save Settings</td>
+                  
+                  <td>1532920994000.0</td>
+                  
+                  <td>112</td>
+                  
+                  <td>None</td>
+                  
+                  <td>307</td>
+                  
+                  <td>1538414283000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36"</td>
+                  
+                  <td>113</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Simon Harris</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Lakyla</td>
+                  
+                  <td>F</td>
+                  
+                  <td>51</td>
+                  
+                  <td>Porter</td>
+                  
+                  <td>195.83955</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Modesto, CA</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1535849930000.0</td>
+                  
+                  <td>507</td>
+                  
+                  <td>Sample Track 2</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538414493000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.3; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>162</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Lily Allen</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Lucero</td>
+                  
+                  <td>F</td>
+                  
+                  <td>23</td>
+                  
+                  <td>Reed</td>
+                  
+                  <td>185.25995</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Louisville/Jefferson County, KY-IN</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1536642109000.0</td>
+                  
+                  <td>570</td>
+                  
+                  <td>22</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538416865000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>140</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Julie London</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Nicole</td>
+                  
+                  <td>F</td>
+                  
+                  <td>44</td>
+                  
+                  <td>Beck</td>
+                  
+                  <td>136.54159</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Vineland-Bridgeton, NJ</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1532224335000.0</td>
+                  
+                  <td>123</td>
+                  
+                  <td>You'd Be So Nice To Come Home To</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538417366000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>124</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Jason Aldean</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Kee</td>
+                  
+                  <td>M</td>
+                  
+                  <td>30</td>
+                  
+                  <td>Taylor</td>
+                  
+                  <td>203.75465</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Virginia Beach-Norfolk-Newport News, VA-NC</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1533764798000.0</td>
+                  
+                  <td>562</td>
+                  
+                  <td>Big Green Tractor</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538417377000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>196</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Erin McKeown</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Jasmine</td>
+                  
+                  <td>F</td>
+                  
+                  <td>27</td>
+                  
+                  <td>Richardson</td>
+                  
+                  <td>338.46812</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Philadelphia-Camden-Wilmington, PA-NJ-DE-MD</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1531477817000.0</td>
+                  
+                  <td>166</td>
+                  
+                  <td>Fast As I Can</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538417600000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>167</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Coldplay</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Emily</td>
+                  
+                  <td>F</td>
+                  
+                  <td>92</td>
+                  
+                  <td>Morrison</td>
+                  
+                  <td>307.51302</td>
+                  
+                  <td>free</td>
+                  
+                  <td>San Francisco-Oakland-Hayward, CA</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1534367797000.0</td>
+                  
+                  <td>477</td>
+                  
+                  <td>Clocks</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538419482000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36"</td>
+                  
+                  <td>232</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged Out</td>
+                  
+                  <td>None</td>
+                  
+                  <td>None</td>
+                  
+                  <td>9</td>
+                  
+                  <td>None</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>free</td>
+                  
+                  <td>None</td>
+                  
+                  <td>GET</td>
+                  
+                  <td>Home</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>171</td>
+                  
+                  <td>None</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538420260000</td>
+                  
+                  <td>None</td>
+                  
+                  <td></td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Aerosmith</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Gianna</td>
+                  
+                  <td>F</td>
+                  
+                  <td>122</td>
+                  
+                  <td>Campos</td>
+                  
+                  <td>294.922</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Mobile, AL</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1535931018000.0</td>
+                  
+                  <td>548</td>
+                  
+                  <td>Dream On</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538421131000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>246</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Thomas Newman</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Nicole</td>
+                  
+                  <td>F</td>
+                  
+                  <td>61</td>
+                  
+                  <td>Beck</td>
+                  
+                  <td>104.07138</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Vineland-Bridgeton, NJ</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1532224335000.0</td>
+                  
+                  <td>123</td>
+                  
+                  <td>Cold Lamb Sandwich</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538421368000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>124</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Adal</td>
+                  
+                  <td>M</td>
+                  
+                  <td>15</td>
+                  
+                  <td>Murphy</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Phoenix-Mesa-Scottsdale, AZ</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>Thumbs Up</td>
+                  
+                  <td>1536977188000.0</td>
+                  
+                  <td>275</td>
+                  
+                  <td>None</td>
+                  
+                  <td>307</td>
+                  
+                  <td>1538422409000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.77.4 (KHTML, like Gecko) Version/6.1.5 Safari/537.77.4"</td>
+                  
+                  <td>276</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Old Crow Medicine Show</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Spencer</td>
+                  
+                  <td>M</td>
+                  
+                  <td>31</td>
+                  
+                  <td>Gonzalez</td>
+                  
+                  <td>183.43138</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Concord, NH</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1537347211000.0</td>
+                  
+                  <td>64</td>
+                  
+                  <td>Bobcat Tracks</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538422502000</td>
+                  
+                  <td>Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>65</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Violent Femmes</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Madelyn</td>
+                  
+                  <td>F</td>
+                  
+                  <td>50</td>
+                  
+                  <td>Henson</td>
+                  
+                  <td>176.74404</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Charlotte-Concord-Gastonia, NC-SC</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1532920994000.0</td>
+                  
+                  <td>112</td>
+                  
+                  <td>Kiss Off</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538423313000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36"</td>
+                  
+                  <td>113</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>DAVE MATTHEWS BAND</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Jaleel</td>
+                  
+                  <td>M</td>
+                  
+                  <td>7</td>
+                  
+                  <td>Maldonado</td>
+                  
+                  <td>309.49832</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Boulder, CO</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1537890437000.0</td>
+                  
+                  <td>407</td>
+                  
+                  <td>One Sweet World</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538424794000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>59</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Kings Of Leon</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Lakyla</td>
+                  
+                  <td>F</td>
+                  
+                  <td>96</td>
+                  
+                  <td>Porter</td>
+                  
+                  <td>181.13261</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Modesto, CA</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1535849930000.0</td>
+                  
+                  <td>507</td>
+                  
+                  <td>Ragoo</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538425432000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.3; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>162</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Shawn Colvin</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Madelyn</td>
+                  
+                  <td>F</td>
+                  
+                  <td>63</td>
+                  
+                  <td>Henson</td>
+                  
+                  <td>149.9424</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Charlotte-Concord-Gastonia, NC-SC</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1532920994000.0</td>
+                  
+                  <td>112</td>
+                  
+                  <td>Words</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538426060000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36"</td>
+                  
+                  <td>113</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Alliance Ethnik</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Chase</td>
+                  
+                  <td>M</td>
+                  
+                  <td>45</td>
+                  
+                  <td>Ross</td>
+                  
+                  <td>195.94404</td>
+                  
+                  <td>free</td>
+                  
+                  <td>New York-Newark-Jersey City, NY-NJ-PA</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1532450666000.0</td>
+                  
+                  <td>136</td>
+                  
+                  <td>SinceritÃÂ© Et Jalousie</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538426073000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.78.2 (KHTML, like Gecko) Version/7.0.6 Safari/537.78.2"</td>
+                  
+                  <td>137</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>ATB</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Erick</td>
+                  
+                  <td>M</td>
+                  
+                  <td>4</td>
+                  
+                  <td>Brooks</td>
+                  
+                  <td>191.7122</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Selma, AL</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1537956751000.0</td>
+                  
+                  <td>57</td>
+                  
+                  <td>Rising Moon</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538426807000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>58</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Talk Talk</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Lakyla</td>
+                  
+                  <td>F</td>
+                  
+                  <td>107</td>
+                  
+                  <td>Porter</td>
+                  
+                  <td>317.75302</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Modesto, CA</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1535849930000.0</td>
+                  
+                  <td>507</td>
+                  
+                  <td>Give It Up</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538427045000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.3; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>162</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Keith Jarrett_ Gary Peacock_ Jack DeJohnette</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Brayden</td>
+                  
+                  <td>M</td>
+                  
+                  <td>23</td>
+                  
+                  <td>Thomas</td>
+                  
+                  <td>422.97424</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Los Angeles-Long Beach-Anaheim, CA</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1534133898000.0</td>
+                  
+                  <td>556</td>
+                  
+                  <td>La Valse Bleue</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538428831000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>85</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>The Black Keys</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Alex</td>
+                  
+                  <td>M</td>
+                  
+                  <td>200</td>
+                  
+                  <td>Myers</td>
+                  
+                  <td>145.65832</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Grand Rapids-Wyoming, MI</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1529995579000.0</td>
+                  
+                  <td>235</td>
+                  
+                  <td>Run Me Down</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538428865000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>236</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Gaz Nevada</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Arianna</td>
+                  
+                  <td>F</td>
+                  
+                  <td>10</td>
+                  
+                  <td>Bullock</td>
+                  
+                  <td>390.21669</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Topeka, KS</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1538314334000.0</td>
+                  
+                  <td>282</td>
+                  
+                  <td>I C Love Affair</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538429786000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; rv:11.0) like Gecko</td>
+                  
+                  <td>283</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>John Mellencamp</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Nicole</td>
+                  
+                  <td>F</td>
+                  
+                  <td>105</td>
+                  
+                  <td>Beck</td>
+                  
+                  <td>255.65995</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Vineland-Bridgeton, NJ</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1532224335000.0</td>
+                  
+                  <td>123</td>
+                  
+                  <td>Jack &amp; Diane</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538430384000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>124</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>The Crystals</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Aurora</td>
+                  
+                  <td>F</td>
+                  
+                  <td>29</td>
+                  
+                  <td>Humphrey</td>
+                  
+                  <td>151.30077</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Dallas-Fort Worth-Arlington, TX</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1536795126000.0</td>
+                  
+                  <td>537</td>
+                  
+                  <td>Then He Kissed Me</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538432544000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"</td>
+                  
+                  <td>127</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Diam's</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Alex</td>
+                  
+                  <td>M</td>
+                  
+                  <td>34</td>
+                  
+                  <td>Hogan</td>
+                  
+                  <td>250.72281</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Denver-Aurora-Lakewood, CO</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1535066380000.0</td>
+                  
+                  <td>523</td>
+                  
+                  <td>Dans Ma Bulle (Edit Radio - Live 2006)</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538433587000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>101</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>None</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Brayden</td>
+                  
+                  <td>M</td>
+                  
+                  <td>45</td>
+                  
+                  <td>Thomas</td>
+                  
+                  <td>nan</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Los Angeles-Long Beach-Anaheim, CA</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>Thumbs Up</td>
+                  
+                  <td>1534133898000.0</td>
+                  
+                  <td>556</td>
+                  
+                  <td>None</td>
+                  
+                  <td>307</td>
+                  
+                  <td>1538434037000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>85</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Kermit Ruffins</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Nicole</td>
+                  
+                  <td>F</td>
+                  
+                  <td>125</td>
+                  
+                  <td>Beck</td>
+                  
+                  <td>349.83138</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Vineland-Bridgeton, NJ</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1532224335000.0</td>
+                  
+                  <td>123</td>
+                  
+                  <td>Skokiaan</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538434095000</td>
+                  
+                  <td>"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>124</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Trivium</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Everett</td>
+                  
+                  <td>M</td>
+                  
+                  <td>90</td>
+                  
+                  <td>Quinn</td>
+                  
+                  <td>293.66812</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Appleton, WI</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1536082261000.0</td>
+                  
+                  <td>553</td>
+                  
+                  <td>Requiem</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538435984000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36"</td>
+                  
+                  <td>195</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>Enya</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Alex</td>
+                  
+                  <td>M</td>
+                  
+                  <td>236</td>
+                  
+                  <td>Myers</td>
+                  
+                  <td>212.32281</td>
+                  
+                  <td>paid</td>
+                  
+                  <td>Grand Rapids-Wyoming, MI</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1529995579000.0</td>
+                  
+                  <td>235</td>
+                  
+                  <td>May It Be (Album version)</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538436387000</td>
+                  
+                  <td>"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"</td>
+                  
+                  <td>236</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>M.I.A.</td>
+                  
+                  <td>Logged In</td>
+                  
+                  <td>Alex</td>
+                  
+                  <td>M</td>
+                  
+                  <td>48</td>
+                  
+                  <td>Hogan</td>
+                  
+                  <td>206.13179</td>
+                  
+                  <td>free</td>
+                  
+                  <td>Denver-Aurora-Lakewood, CO</td>
+                  
+                  <td>PUT</td>
+                  
+                  <td>NextSong</td>
+                  
+                  <td>1535066380000.0</td>
+                  
+                  <td>523</td>
+                  
+                  <td>Paper Planes</td>
+                  
+                  <td>200</td>
+                  
+                  <td>1538437394000</td>
+                  
+                  <td>Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0</td>
+                  
+                  <td>101</td>
+                  
+                </tr>
+                
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script class="pd_save">
+    $(function() {
+      var tableWrapper = $('.df-table-wrapper-28f0c736');
+      var fixedHeader = $('.fixed-header', tableWrapper);
+      var tableContainer = $('.df-table-container', tableWrapper);
+      var table = $('.df-table', tableContainer);
+      var rows = $('tbody > tr', table);
+      var total = 100;
+  
+      fixedHeader
+        .css('width', table.width())
+        .find('.fixed-cell')
+        .each(function(i, e) {
+          $(this).css('width', $('.df-table-wrapper-28f0c736 th:nth-child(' + (i+1) + ')').css('width'));
+        });
+  
+      tableContainer.scroll(function() {
+        fixedHeader.css({ left: table.position().left });
+      });
+  
+      rows.on("click", function(e){
+          var txt = e.delegateTarget.innerText;
+          var splits = txt.split("\t");
+          var len = splits.length;
+          var hdrs = $(fixedHeader).find(".fixed-cell");
+          // Add all cells in the selected row as a map to be consumed by the target as needed
+          var payload = {type:"select", targetDivId: "" };
+          for (var i = 0; i < len; i++) {
+            payload[hdrs[i].innerHTML] = splits[i];
+          }
+  
+          //simple selection highlighting, client adds "selected" class
+          $(this).addClass("selected").siblings().removeClass("selected");
+          $(document).trigger('pd_event', payload);
+      });
+  
+      $('.df-table-search', tableWrapper).keyup(function() {
+        var val = '^(?=.*\\b' + $.trim($(this).val()).split(/\s+/).join('\\b)(?=.*\\b') + ').*$';
+        var reg = RegExp(val, 'i');
+        var index = 0;
+        
+        rows.each(function(i, e) {
+          if (!reg.test($(this).text().replace(/\s+/g, ' '))) {
+            $(this).attr('class', 'hidden');
+          }
+          else {
+            $(this).attr('class', (++index % 2 == 0 ? 'even' : 'odd'));
+          }
+        });
+        $('.df-table-search-count', tableWrapper).html('Showing ' + index + ' of ' + total + ' rows');
+      });
+    });
+  
+    $(".df-table-wrapper td:contains('http://')").each(function(){var tc = this.textContent; $(this).wrapInner("<a target='_blank' href='" + tc + "'></a>");});
+    $(".df-table-wrapper td:contains('https://')").each(function(){var tc = this.textContent; $(this).wrapInner("<a target='_blank' href='" + tc + "'></a>");});
+  </script>
+  
+        </div>
+
 
 
 ```python
@@ -213,47 +4569,47 @@ user_log.select(numerical_columns).describe().toPandas()
     <tr>
       <th>0</th>
       <td>count</td>
-      <td>286500</td>
-      <td>278154</td>
-      <td>286500</td>
-      <td>286500</td>
-      <td>286500</td>
+      <td>543705</td>
+      <td>528005</td>
+      <td>543705</td>
+      <td>543705</td>
+      <td>543705</td>
     </tr>
     <tr>
       <th>1</th>
       <td>mean</td>
-      <td>114.41421291448516</td>
-      <td>1.5353588340844272E12</td>
-      <td>1041.526554973822</td>
-      <td>210.05459685863875</td>
-      <td>1.5409568898104834E12</td>
+      <td>107.30629109535502</td>
+      <td>1.535523414862437E12</td>
+      <td>2040.8143533717732</td>
+      <td>210.01829116892432</td>
+      <td>1.5409645412098003E12</td>
     </tr>
     <tr>
       <th>2</th>
       <td>stddev</td>
-      <td>129.76726201140994</td>
-      <td>3.291321616327586E9</td>
-      <td>726.7762634630741</td>
-      <td>31.50507848842214</td>
-      <td>1.5075439608226302E9</td>
+      <td>116.72350849188074</td>
+      <td>3.0787254929957166E9</td>
+      <td>1434.338931078271</td>
+      <td>31.471919021567537</td>
+      <td>1.4820571449105084E9</td>
     </tr>
     <tr>
       <th>3</th>
       <td>min</td>
       <td>0</td>
-      <td>1521380675000</td>
+      <td>1509854193000</td>
       <td>1</td>
       <td>200</td>
-      <td>1538352117000</td>
+      <td>1538352011000</td>
     </tr>
     <tr>
       <th>4</th>
       <td>max</td>
-      <td>1321</td>
-      <td>1543247354000</td>
-      <td>2474</td>
+      <td>1005</td>
+      <td>1543073874000</td>
+      <td>4808</td>
       <td>404</td>
-      <td>1543799476000</td>
+      <td>1543622466000</td>
     </tr>
   </tbody>
 </table>
@@ -270,7 +4626,7 @@ for column in categorical_columns:
     +------------------------+
     |artist : distinct values|
     +------------------------+
-    |                   17655|
+    |                   21247|
     +------------------------+
     
     None
@@ -284,7 +4640,7 @@ for column in categorical_columns:
     +---------------------------+
     |firstName : distinct values|
     +---------------------------+
-    |                        189|
+    |                        345|
     +---------------------------+
     
     None
@@ -298,7 +4654,7 @@ for column in categorical_columns:
     +--------------------------+
     |lastName : distinct values|
     +--------------------------+
-    |                       173|
+    |                       275|
     +--------------------------+
     
     None
@@ -312,7 +4668,7 @@ for column in categorical_columns:
     +--------------------------+
     |location : distinct values|
     +--------------------------+
-    |                       114|
+    |                       192|
     +--------------------------+
     
     None
@@ -333,21 +4689,21 @@ for column in categorical_columns:
     +----------------------+
     |song : distinct values|
     +----------------------+
-    |                 58480|
+    |                 80292|
     +----------------------+
     
     None
     +---------------------------+
     |userAgent : distinct values|
     +---------------------------+
-    |                         56|
+    |                         71|
     +---------------------------+
     
     None
     +------------------------+
     |userId : distinct values|
     +------------------------+
-    |                     226|
+    |                     449|
     +------------------------+
     
     None
@@ -362,26 +4718,26 @@ user_log.groupBy(["status", "method", "page"]).count().orderBy("status", "method
     +------+------+--------------------+------+
     |status|method|                page| count|
     +------+------+--------------------+------+
-    |   200|   GET|            Register|    18|
-    |   200|   GET|Cancellation Conf...|    52|
-    |   200|   GET|             Upgrade|   499|
-    |   200|   GET|               About|   924|
-    |   200|   GET|            Settings|  1514|
-    |   200|   GET|                Help|  1726|
-    |   200|   GET|           Downgrade|  2055|
-    |   200|   GET|         Roll Advert|  3933|
-    |   200|   GET|                Home| 14457|
-    |   200|   PUT|     Add to Playlist|  6526|
-    |   200|   PUT|            NextSong|228108|
-    |   307|   PUT| Submit Registration|     5|
-    |   307|   PUT|              Cancel|    52|
-    |   307|   PUT|    Submit Downgrade|    63|
-    |   307|   PUT|      Submit Upgrade|   159|
-    |   307|   PUT|       Save Settings|   310|
-    |   307|   PUT|         Thumbs Down|  2546|
-    |   307|   PUT|              Logout|  3226|
-    |   307|   PUT|               Login|  3241|
-    |   307|   PUT|          Add Friend|  4277|
+    |   200|   GET|            Register|    11|
+    |   200|   GET|Cancellation Conf...|    99|
+    |   200|   GET|             Upgrade|   968|
+    |   200|   GET|               About|  1855|
+    |   200|   GET|            Settings|  2964|
+    |   200|   GET|                Help|  3150|
+    |   200|   GET|           Downgrade|  3811|
+    |   200|   GET|         Roll Advert|  7773|
+    |   200|   GET|                Home| 27412|
+    |   200|   PUT|     Add to Playlist| 12349|
+    |   200|   PUT|            NextSong|432877|
+    |   307|   PUT| Submit Registration|     4|
+    |   307|   PUT|              Cancel|    99|
+    |   307|   PUT|    Submit Downgrade|   117|
+    |   307|   PUT|      Submit Upgrade|   287|
+    |   307|   PUT|       Save Settings|   585|
+    |   307|   PUT|         Thumbs Down|  4911|
+    |   307|   PUT|              Logout|  5990|
+    |   307|   PUT|               Login|  6011|
+    |   307|   PUT|          Add Friend|  8087|
     +------+------+--------------------+------+
     only showing top 20 rows
     
@@ -395,83 +4751,27 @@ print(pd_df["userAgent"].tolist())
 pd_df["count"].describe()
 ```
 
-    ['Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:31.0) Gecko/20100101 Firefox/31.0', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:31.0) Gecko/20100101 Firefox/31.0', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"', '"Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/537.75.14"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/537.77.4 (KHTML, like Gecko) Version/6.1.5 Safari/537.77.4"', 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; WOW64; Trident/6.0)', 'Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Firefox/31.0', 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Firefox/24.0', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.74.9 (KHTML, like Gecko) Version/7.0.2 Safari/537.74.9"', 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10) AppleWebKit/600.1.3 (KHTML, like Gecko) Version/8.0 Safari/600.1.3"', '"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:31.0) Gecko/20100101 Firefox/31.0', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:31.0) Gecko/20100101 Firefox/31.0', '"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_1 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D201 Safari/9537.53"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.76.4 (KHTML, like Gecko) Version/7.0.4 Safari/537.76.4"', '"Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"', 'Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0', '"Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"', '"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36"', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:31.0) Gecko/20100101 Firefox/31.0', 'Mozilla/5.0 (Windows NT 6.0; rv:31.0) Gecko/20100101 Firefox/31.0', '"Mozilla/5.0 (iPad; CPU OS 7_1_1 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D201 Safari/9537.53"', 'Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Firefox/31.0', '"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D167 Safari/9537.53"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"', '"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', '"Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"', 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:30.0) Gecko/20100101 Firefox/30.0', 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:32.0) Gecko/20100101 Firefox/32.0', '"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36"', 'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko', '"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"', '"Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10) AppleWebKit/600.1.8 (KHTML, like Gecko) Version/8.0 Safari/600.1.8"', 'Mozilla/5.0 (Windows NT 6.3; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0', '"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53"', '"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36"', '"Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.78.2 (KHTML, like Gecko) Version/7.0.6 Safari/537.78.2"', None, 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)', '"Mozilla/5.0 (iPad; CPU OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53"', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Firefox/31.0', '"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.103 Safari/537.36"', '"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"', 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.77.4 (KHTML, like Gecko) Version/7.0.5 Safari/537.77.4"', '"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"']
+    ['"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/537.75.14"', 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:30.0) Gecko/20100101 Firefox/30.0', '"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36"', 'Mozilla/5.0 (Windows NT 6.0; rv:31.0) Gecko/20100101 Firefox/31.0', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0', 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:32.0) Gecko/20100101 Firefox/32.0', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.74.9 (KHTML, like Gecko) Version/7.0.2 Safari/537.74.9"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', 'Mozilla/5.0 (Windows NT 5.1; rv:31.0) Gecko/20100101 Firefox/31.0', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.76.4 (KHTML, like Gecko) Version/7.0.4 Safari/537.76.4"', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:31.0) Gecko/20100101 Firefox/31.0', '"Mozilla/5.0 (iPad; CPU OS 7_1_1 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D201 Safari/9537.53"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/534.59.10 (KHTML, like Gecko) Version/5.1.9 Safari/534.59.10"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10) AppleWebKit/600.1.3 (KHTML, like Gecko) Version/8.0 Safari/600.1.3"', '"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_1 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D201 Safari/9537.53"', 'Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:31.0) Gecko/20100101 Firefox/31.0', '"Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', '"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36"', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:31.0) Gecko/20100101 Firefox/31.0', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Firefox/24.0', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:31.0) Gecko/20100101 Firefox/31.0', '"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D167 Safari/9537.53"', '"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/34.0.1847.116 Chrome/34.0.1847.116 Safari/537.36"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36"', 'Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Firefox/31.0', '"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/36.0.1985.125 Chrome/36.0.1985.125 Safari/537.36"', '"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"', '"Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_5) AppleWebKit/537.77.4 (KHTML, like Gecko) Version/6.1.5 Safari/537.77.4"', '"Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36"', 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; WOW64; Trident/6.0)', '"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', '"Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36"', 'Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Firefox/31.0', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10) AppleWebKit/600.1.8 (KHTML, like Gecko) Version/8.0 Safari/600.1.8"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.77.4 (KHTML, like Gecko) Version/6.1.5 Safari/537.77.4"', 'Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; rv:11.0) like Gecko', '"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36"', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:31.0) Gecko/20100101 Firefox/31.0', 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; WOW64; Trident/6.0)', '"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.103 Safari/537.36"', 'Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0', '"Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"', '"Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:30.0) Gecko/20100101 Firefox/30.0', 'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko', 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)', '"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36"', '"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53"', 'Mozilla/5.0 (Windows NT 6.3; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0', '"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"', '"Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', '"Mozilla/5.0 (iPad; CPU OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53"', None, 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Firefox/31.0', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.94 Safari/537.36"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.78.2 (KHTML, like Gecko) Version/7.0.6 Safari/537.78.2"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.77.4 (KHTML, like Gecko) Version/7.0.5 Safari/537.77.4"', '"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"', '"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.143 Safari/537.36"', 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0', '"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36"']
 
 
 
 
 
-    count       57.000000
-    mean      5026.315789
-    std       5570.658201
-    min         62.000000
-    25%       1262.000000
-    50%       2544.000000
-    75%       7624.000000
-    max      22751.000000
+    count       72.000000
+    mean      7551.458333
+    std       9805.527044
+    min        245.000000
+    25%       1802.250000
+    50%       3546.000000
+    75%       9839.500000
+    max      46082.000000
     Name: count, dtype: float64
 
 
 
-### Findings of descriptive statistics on data sample per feature: ###
-* Summary per feature:
-    * auth: no missing values; 4 distinct values. 
-        * follow-up: check if missing values relate to value "Logged Out"
-    * artist: few missing values; 17655 distinct values.
-    * song: few missing values; 58480 distinct values.
-    * userID: no missing values; 226 distinct values.
-    * firstName: few missing values; 189 distinct values.
-    * LastName: few missing values; 173 distinct values.
-    * gender: few missing values; 2 distinct values.
-    * ItemInSession: no missing values; 1322 distinct values.
-        * follow-up: analyse meaning on example of one user
-    * length: few missing values; 14865 distinct values.
-        * follow-up: analyse meaning on example of one user
-    * level: no missing values; 2 distinct values.
-    * location: few missing values; 114 distinct values
-        * follow-up: analyse user locations according to Country, State, etc
-    * method: no missing values; 2 distinct values.
-        * follow-up: analyse meaning on example of one user
-    * page: no missing values; 22 distinct values.
-    * registration: few missing values; 225 distinct values.
-        * relates to 226 unique userID's minus empty name
-        * format equals timestamp -> follow-up: convert to time/date
-    * sessionID: few missing values; 2354 distinct values.
-        * follow-up: analyse meaning on example of one user
-    * status: no missing values; 3 distinct values.
-    * ts: no missing values; 277447 unique values.
-        * follow-up: conversion to date/ time
-        * follow-up: analyse spread of date/ time
-        * follow-up: further conversion to features for year/ month/ time
-    * userAgent: few missing values; 56 distinct values
-        * follow-up: further analyse values and value distribution
-
-* Follow-up summary:
-    1. "auth": check if missing values relate to value "Logged Out"
-    2. analyse meaning on example of one user:
-        * list = ["ItemInSession", "length", "method", "sessionID"]
-    3. print categorical features with low cardinality (less than 56 distinct values):
-        * list = ["auth", "gender", "level", "method", "page", "status", "userAgent"]
-        * value name and value counts
-    4. "location": analyse user locations and CSA (Combined Statistical Areas)
-    * convert to time/date via new feature:
-        * list = ["registration", "ts"]
-    5. "ts": analyse spread of date/ time
-    6. "ts": further conversion to features for year/ month/ time
-
-#### Findings on (1):
-* "auth" value "Cancelled" correlates to "page" value "Cancellation Confirmed".
-* "auth" value "Guest" does not have any relevant information on users and can for churn use case be dropped.
-    * follow-up: drop corresponding rows (user_log["auth"]=="Guest")
-* "auth" value "Logged Out" does not have any relevant information on users and can for churn use case be dropped.
-    * follow-up: drop corresponding rows (user_log["auth"]==""Logged Out"") 
-* "auth" values "Logged In" has no missing artist values at page value "NextSong" (ca  72% in sample data set).
-    * interpretation: users are in this cases listenting to music.
-* "auth" values "Logged In" has missing artist values at all other pages (ca 18%in sample data set).
-    * interpretation: users are in this cases not listenting to music, but doing other transactions
-
 
 ```python
+# print missing values depending on column "auth" value
 auth_values = user_log.select("auth").distinct().rdd.map(lambda r: r[0]).collect()
 for value in auth_values:
     print("null values in rows with auth value {}:".format(value))
@@ -492,112 +4792,94 @@ for value in auth_values:
 ```
 
     null values in rows with auth value Logged Out:
-    column artist : 8249
-    column firstName : 8249
-    column gender : 8249
-    column lastName : 8249
-    column length : 8249
-    column location : 8249
-    column registration : 8249
-    column song : 8249
-    column userAgent : 8249
+    column artist : 15606
+    column firstName : 15606
+    column gender : 15606
+    column lastName : 15606
+    column length : 15606
+    column location : 15606
+    column registration : 15606
+    column song : 15606
+    column userAgent : 15606
     column userId : 0
     null values in rows with auth value Cancelled:
-    column artist : 52
+    column artist : 99
     column firstName : 0
     column gender : 0
     column lastName : 0
-    column length : 52
+    column length : 99
     column location : 0
     column registration : 0
-    column song : 52
+    column song : 99
     column userAgent : 0
     column userId : 0
     null values in rows with auth value Guest:
-    column artist : 97
-    column firstName : 97
-    column gender : 97
-    column lastName : 97
-    column length : 97
-    column location : 97
-    column registration : 97
-    column song : 97
-    column userAgent : 97
+    column artist : 94
+    column firstName : 94
+    column gender : 94
+    column lastName : 94
+    column length : 94
+    column location : 94
+    column registration : 94
+    column song : 94
+    column userAgent : 94
     column userId : 0
     null values in rows with auth value Logged In:
-    column artist : 49994
+    column artist : 95029
     column firstName : 0
     column gender : 0
     column lastName : 0
-    column length : 49994
+    column length : 95029
     column location : 0
     column registration : 0
-    column song : 49994
+    column song : 95029
     column userAgent : 0
     column userId : 0
 
 
-#### (2) analyse meaning on example of one user: ####
-list = ["ItemInSession", "length", "method", "sessionID"]
-
-Findings:
-* number of items per "sessionId" does not equal values in "ItemInSession"
-* "method" appear to refer to user interaction. Interpretation:
-    * PUT: action by user. Therefore PUT data should be furhter analyzed.
-    * GET: reaction to user
-* "lenght" refers to song length
-* "sessionID": values are not unique. 
-    * Several users can share the same session Id.
-    * an examplary analysis showed not direct relation between users that share the same sessionId
-
-#### Findings on (3) ####
-* "status": refers to html status codes (https://en.wikipedia.org/wiki/List_of_HTTP_status_codes)
-    * 200: page ok
-    * 307: Temporary redirect
-    * 404: error
-* "userAgent": needs to be split up into further features for analysis, e.g. influence of operating system
-
-### Remove values where "auth" value is either "Guest" or "Logged Out" since userId is missing
+## Remove values where "auth" value is either "Guest" or "Logged Out" since userId is missing
 
 
 ```python
+print("Rows in dataset before auth values Guest and Logged Out are removed: ", user_log.count())
+
 # remove values where "auth" value is either "Guest" or "Logged Out" since userId is missing
 user_log = user_log.filter(user_log["auth"].isin(*["Guest", "Logged Out"]) == False)
+
+print("Rows in dataset before auth values Guest and Logged Out are removed: ", user_log.count())
 ```
+
+    Rows in dataset before auth values Guest and Logged Out are removed:  543705
+    Rows in dataset before auth values Guest and Logged Out are removed:  528005
+
 
 # Exploratory Data Analysis
-When you're working with the full dataset, perform EDA by loading a small subset of the data and doing basic manipulations within Spark. In this workspace, you are already provided a small subset of data you can explore.
-
-### Define Churn
-
-Once you've done some preliminary analysis, create a column `Churn` to use as the label for your model. I suggest using the `Cancellation Confirmation` events to define your churn, which happen for both paid and free users. As a bonus task, you can also look into the `Downgrade` events.
-
-### Explore Data
-Once you've defined churn, perform some exploratory data analysis to observe the behavior for users who stayed vs users who churned. You can start by exploring aggregates on these two groups of users, observing how much of a specific action they experienced per a certain time unit or number of songs played.
-
 ## Define feature "churn"
-
-
-```python
-user_log.select("page").distinct().toPandas()["page"].values
-```
-
-
-
-
-    array(['Cancel', 'Submit Downgrade', 'Thumbs Down', 'Home', 'Downgrade',
-           'Roll Advert', 'Logout', 'Save Settings',
-           'Cancellation Confirmation', 'About', 'Settings', 'Add to Playlist',
-           'Add Friend', 'NextSong', 'Thumbs Up', 'Help', 'Upgrade', 'Error',
-           'Submit Upgrade'], dtype=object)
-
-
 
 
 ```python
 flag_churn_event = F.udf(lambda page: 1 if page == "Cancellation Confirmation" else 0, IntegerType())
 user_log = user_log.withColumn("churn", flag_churn_event("page"))
+
+# analyze churn per userId
+pd_df = user_log.select("userId", "churn").dropDuplicates().toPandas()
+print("Distinct users in dataset: {}".format(pd_df["userId"].nunique()))
+print("Value counts of churn over all userId's:")
+print(pd_df["churn"].value_counts())
+plt.hist(pd_df["churn"])
+plt.show()
 ```
+
+    Distinct users in dataset: 448
+    Value counts of churn over all userId's:
+    0    448
+    1     99
+    Name: churn, dtype: int64
+
+
+
+![png](output_17_1.png)
+
 
 ## Explore Data
 
@@ -608,36 +4890,22 @@ user_log = user_log.withColumn("churn", flag_churn_event("page"))
 # create new feature CSA (Combined Statistical Areas) from location 
 get_csa = F.split(user_log["location"], ", ")
 user_log = user_log.withColumn("CSA", get_csa.getItem(1))
-```
 
+# analyze CSA
+pd_user_csa_churn = user_log.select("userId", "CSA", "churn").dropDuplicates().groupBy("userId", "CSA").agg(F.sum("churn").alias("churn")).toPandas()
 
-```python
-distinct_users_csa = user_log.select("userId", "CSA").distinct().count()
-distinct_users_location = user_log.select("userId", "location").distinct().count()
-print("Distinct users per CSA: {}. Distinct users per location: {}".format(distinct_users_csa, distinct_users_location))
-```
+pd_csa_analysis = pd_user_csa_churn.groupby("CSA", as_index=False).agg({"userId":"count", "churn": "sum"}).sort_values(by=["userId", "churn"], ascending = False)
 
-    Distinct users per CSA: 225. Distinct users per location: 225
-
-
-
-```python
-# number of users per CSA
-pd_distinct_users_csa = user_log.select("userId", "CSA").distinct().groupBy("CSA").agg(F.count("userId").alias("userId_count")).orderBy("userId_count", ascending=False).toPandas()
-```
-
-
-```python
 plt.figure(figsize=(16, 16))
-sns.barplot(x="userId_count", y="CSA", data=pd_distinct_users_csa);
+sns.barplot(x="userId", y="CSA" , data=pd_csa_analysis, color = "red");
+sns.barplot(x="churn", y="CSA" , data=pd_csa_analysis, color = "blue").set_title("userId count (red) & churn count (blue) per CSA");
 ```
 
 
-![png](output_30_0.png)
+![png](output_19_0.png)
 
 
-####  (5) convert to time/date: ####
-list = ["registration", "ts"]
+### Convert to timestamp "ts" time/date
 
 
 ```python
@@ -645,19 +4913,14 @@ def convert_ts_to_datetime(df, column):
     get_datetime = F.udf(lambda timestamp: datetime.datetime.fromtimestamp(timestamp/1000).isoformat())
     df = df.withColumn(column + "_ts", get_datetime(df[column]).cast(TimestampType()))
     return df
-```
 
-
-```python
-# create new features in timestamp format from features "registration", "ts"
-#column_list = ["registration", "ts"]
+# create new feature with Spark Timestamp data type
 user_log = convert_ts_to_datetime(user_log, "ts")
 ```
 
-#### (6) "ts": analyse spread of date/ time
-
 
 ```python
+# analyze min and max timestamp data in set
 min_date, max_date = user_log.select(F.min("ts_ts"), F.max("ts_ts")).first()
 print("Minimum and Maximum timestamp data:")
 min_date, max_date
@@ -669,22 +4932,17 @@ min_date, max_date
 
 
 
-    (datetime.datetime(2018, 10, 1, 0, 1, 57),
-     datetime.datetime(2018, 12, 3, 1, 11, 16))
+    (datetime.datetime(2018, 10, 1, 0, 0, 11),
+     datetime.datetime(2018, 12, 1, 0, 1, 6))
 
 
-
-#### (7) "ts": further conversion to features for date/ hour
 
 
 ```python
-# get new features day and hour
+# get new features day and hour from ts
 user_log = user_log.withColumn("ts_hour", F.hour("ts_ts"))
 user_log = user_log.withColumn("ts_date", F.to_date("ts_ts"))
-```
 
-
-```python
 print("Analyze log data over time:")
 #pd_df = user_log.select(hour("ts_ts").alias("hour")).groupBy("hour").count().orderBy("hour").toPandas()
 pd_df = user_log.select("ts_hour").groupBy("ts_hour").count().orderBy("ts_hour").toPandas()
@@ -695,30 +4953,28 @@ pd_df.plot.line(x="ts_hour", y="count");
 
 
 
-![png](output_38_1.png)
+![png](output_23_1.png)
 
 
-## Features from "page" value ##
-
-### Selection of page values for new features:
-* "downgraded" from "Submit Downgrad"
-* ...
+### Features from "page" value
 
 
 ```python
 def create_page_value_feature(df, page_value, col_name):
     '''
-    ARGS:
-    OUTPUT
+    ARGS
+    df: Spark dataframe
+    page_value: categorical value in column "page" of df
+    col_name: column name of new feature that is added to df
+    
+    OUTPUT: Spark dataframe with new column from page value
     
     Function that creates a new feature from a certain value of feature "page"
     '''
     flag_page_value_event = F.udf(lambda page: 1 if page == page_value else 0, IntegerType())
     return df.withColumn(col_name, flag_page_value_event("page"))
-```
 
-
-```python
+# dictionary for page values and corresponding new features
 page_value_feature_dict = {"Submit Downgrade" : "downgraded",
                            "Submit Upgrade" : "upgraded",
                            "Roll Advert" : "advert_shown",
@@ -734,14 +4990,8 @@ for page_value in page_value_feature_dict.keys():
 ```
 
 # Feature Engineering
-Once you've familiarized yourself with the data, build out the features you find promising to train your model on. To work with the full dataset, you can follow the following steps.
-- Write a script to extract the necessary features from the smaller subset of data
-- Ensure that your script is scalable, using the best practices discussed in Lesson 3
-- Try your script on the full data set, debugging your script if necessary
 
-If you are working in the classroom workspace, you can just extract features based on the small subset of data contained here. Be sure to transfer over this work to the larger dataset when you work on your Spark cluster.
-
-## Create new dataframe for features bases on userId's
+## Create new dataframe for features per userId
 
 
 ```python
@@ -762,45 +5012,42 @@ get_churn = F.udf(lambda user: 1 if user in churned_users else 0, IntegerType())
 features_df = features_df.withColumn("label", get_churn("userId"))
 ```
 
-## Encode features "gender", "level"
+## Encode binary features "gender", "level"
 
 ### Encode "gender"
-* gender value "M" = value 1
-* gender value "F" = value 0
+- gender value "M" = value 1
+- gender value "F" = value 0
+
+### Encode "level"
+- level value "paid" = value 1
+- level value "free" = value 0
 
 
 ```python
 # one hot encode gender in original df
 one_hot_encode_gender = F.udf(lambda gender: 1 if gender == "M" else 0, IntegerType())
 user_log = user_log.withColumn("gender_bin", one_hot_encode_gender("gender"))
-```
 
-
-```python
 # join binary gender on userId in features df
 user_gender_selection =  user_log.select(["userId", "gender_bin"]).dropDuplicates(subset=['userId'])
 features_df = features_df.join(user_gender_selection, "userId")
-```
 
-### Encode "level"
-* level value "paid" = value 1
-* level value "free" = value 0
-
-
-```python
 # one hot encode level in original df
 one_hot_encode_level = F.udf(lambda level: 1 if level == "paid" else 0, IntegerType())
 user_log = user_log.withColumn("level_bin", one_hot_encode_level("level"))
-```
 
+# get last state of level for each userId
+user_level_selection =  user_log\
+.select(["userId", "level_bin", "ts"])\
+.orderBy("ts", ascending=False)\
+.dropDuplicates(subset=['userId'])\
+.drop("ts")
 
-```python
 # join binary gender on userId in features df
-user_level_selection =  user_log.select(["userId", "level_bin"]).dropDuplicates(subset=['userId'])
 features_df = features_df.join(user_level_selection, "userId")
 ```
 
-## Encode page view features
+## Encode non-binary page view features
 * encode count of page view features per userId
 * page view features to be included: 
 ['downgraded',
@@ -822,21 +5069,18 @@ page_features_count = user_log.groupBy("userId").sum('downgraded', 'upgraded',
 features_df = features_df.join(page_features_count, "userId", how="left")
 ```
 
-## Encode further features
+## Encode non-binary features related to service usage
 * "song_count": songs per user
 * "days_since_reg": days from registration until latest user timestamp of a user
+* "session_time_seconds": accumulated session time per userId in seconds
 
 
 ```python
 # create new feature "song_count" in features_df
 song_count = user_log.groupBy("userId").agg(F.count("song").alias("song_count")).orderBy("song_count", ascending=False)
 features_df = features_df.join(song_count, "userId", how="left")
-```
 
-
-```python
 # create new feature "days_since_reg" in features_df
-
 # create new features in timestamp format from features "registration"
 reg_df=user_log.select("userId", "registration").filter(user_log["registration"].isNotNull()).distinct()
 reg_df = convert_ts_to_datetime(reg_df, "registration")
@@ -849,12 +5093,8 @@ reg_df = reg_df.withColumn("days_since_reg", F.datediff("last_user_ts_date", "re
 
 # add feature "days_since_reg" to features_df
 features_df = features_df.join(reg_df.select("userId", "days_since_reg"), "userId", how="left")
-```
 
-
-```python
 # get new feature for accumulated session time per userId
-
 user_session_min_ts = user_log.groupBy("userId", "sessionID").agg(F.min("ts")).orderBy("userId", "sessionID")
 user_session_max_ts = user_log.groupBy("userId", "sessionID").agg(F.max("ts")).orderBy("userId", "sessionID")
 user_session_max_ts = user_session_max_ts.join(user_session_min_ts, ["userId", "sessionID"])
@@ -867,96 +5107,7 @@ total_user_session_time = user_session_max_ts.groupBy("userId").agg(F.sum("sessi
 features_df = features_df.join(total_user_session_time, "userId", how="left")
 ```
 
-## Explore data with regards to churn
-
-
-```python
-display(features_df)
-```
-
-
-```python
-pd_features_df = features_df.toPandas()
-```
-
-
-```python
-features_wo_id_label = pd_features_df.columns.values.tolist()[2:]
-first_features_df = pd_features_df[features_wo_id_label[:-6]]
-first_features_df["label"] = pd_features_df["label"]
-second_features_df = pd_features_df[features_wo_id_label[:6]]
-second_features_df["label"] = pd_features_df["label"]
-```
-
-    /opt/conda/lib/python3.6/site-packages/ipykernel_launcher.py:3: SettingWithCopyWarning: 
-    A value is trying to be set on a copy of a slice from a DataFrame.
-    Try using .loc[row_indexer,col_indexer] = value instead
-    
-    See the caveats in the documentation: http://pandas.pydata.org/pandas-docs/stable/indexing.html#indexing-view-versus-copy
-      This is separate from the ipykernel package so we can avoid doing imports until
-    /opt/conda/lib/python3.6/site-packages/ipykernel_launcher.py:5: SettingWithCopyWarning: 
-    A value is trying to be set on a copy of a slice from a DataFrame.
-    Try using .loc[row_indexer,col_indexer] = value instead
-    
-    See the caveats in the documentation: http://pandas.pydata.org/pandas-docs/stable/indexing.html#indexing-view-versus-copy
-      """
-
-
-
-```python
-# show relationship between variables for all features
-plt.figure(figsize=(25, 25))
-sns.pairplot(first_features_df, hue="label");
-```
-
-
-    <matplotlib.figure.Figure at 0x7f58f91a67f0>
-
-
-
-![png](output_65_1.png)
-
-
-
-```python
-# show relationship between variables for all features
-plt.figure(figsize=(25, 25))
-sns.pairplot(second_features_df, hue="label");
-```
-
-
-    <matplotlib.figure.Figure at 0x7f58f071d320>
-
-
-
-![png](output_66_1.png)
-
-
-
-```python
-# print correlation between variables
-corr = pd_features_df.drop("userId", axis=1).corr()
-sns.heatmap(corr, xticklabels=corr.columns, yticklabels=corr.columns, cmap=sns.diverging_palette(220, 10, as_cmap=True));
-```
-
-
-![png](output_67_0.png)
-
-
-# START TMP: Save df_features to csv and load from it
-
-
-```python
-# save to csv 
-features_df.toPandas().to_csv("features_pd_df.csv")
-features_df.write.save("features_sp_df.csv", format="csv", inferSchema=True, header="true")
-```
-
-
-```python
-# load from csv
-#features_df = spark.read.load("features_pd_df.csv", format="csv", inferSchema="true", header="true")
-```
+## Explore features with regards to churn
 
 
 ```python
@@ -968,7 +5119,7 @@ display(features_df)
         <div class="pd_save is-viewer-good" style="padding-right:10px;text-align: center;line-height:initial !important;font-size: xx-large;font-weight: 500;color: coral;">
             
         </div>
-    <div id="chartFigure63eeabe3" class="pd_save is-viewer-good" style="overflow-x:auto">
+    <div id="chartFigure9c339a58" class="pd_save is-viewer-good" style="overflow-x:auto">
             <style type="text/css" class="pd_save">
     .df-table-wrapper .panel-heading {
       border-radius: 0;
@@ -1091,16 +5242,16 @@ display(features_df)
   </style>
   
   
-  <div class="df-table-wrapper df-table-wrapper-63eeabe3 panel-group pd_save">
+  <div class="df-table-wrapper df-table-wrapper-9c339a58 panel-group pd_save">
     <!-- dataframe schema -->
     
     <div class="panel panel-default">
       <div class="panel-heading">
         <h4 class="panel-title" style="margin: 0px;">
-          <a data-toggle="collapse" href="#df-schema-63eeabe3" data-parent="#df-table-wrapper-63eeabe3">Schema</a>
+          <a data-toggle="collapse" href="#df-schema-9c339a58" data-parent="#df-table-wrapper-9c339a58">Schema</a>
         </h4>
       </div>
-      <div id="df-schema-63eeabe3" class="panel-collapse collapse">
+      <div id="df-schema-9c339a58" class="panel-collapse collapse">
         <div class="panel-body" style="font-family: monospace;">
           <div class="df-schema-fields">
             <div>Field types:</div>
@@ -1143,18 +5294,18 @@ display(features_df)
       
       <div class="panel-heading">
         <h4 class="panel-title" style="margin: 0px;">
-          <a data-toggle="collapse" href="#df-table-63eeabe3" data-parent="#df-table-wrapper-63eeabe3"> Table</a>
+          <a data-toggle="collapse" href="#df-table-9c339a58" data-parent="#df-table-wrapper-9c339a58"> Table</a>
         </h4>
       </div>
       
-      <div id="df-table-63eeabe3" class="panel-collapse collapse in">
+      <div id="df-table-9c339a58" class="panel-collapse collapse in">
         <div class="panel-body">
           
           <input type="text" class="df-table-search form-control input-sm" placeholder="Search table">
           
           <div>
             
-            <span class="df-table-search-count">Showing 100 of 225 rows</span>
+            <span class="df-table-search-count">Showing 100 of 448 rows</span>
             
           </div>
           <!-- fixed header for when dataframe table scrolls -->
@@ -1244,21 +5395,21 @@ display(features_df)
                   
                   <td>0</td>
                   
-                  <td>32</td>
+                  <td>28</td>
+                  
+                  <td>4</td>
+                  
+                  <td>10</td>
                   
                   <td>3</td>
                   
-                  <td>28</td>
+                  <td>13</td>
                   
-                  <td>7</td>
+                  <td>307</td>
                   
-                  <td>5</td>
+                  <td>69</td>
                   
-                  <td>398</td>
-                  
-                  <td>70</td>
-                  
-                  <td>95296</td>
+                  <td>73589</td>
                   
                 </tr>
                 
@@ -1266,95 +5417,127 @@ display(features_df)
                   
                   <td>85</td>
                   
-                  <td>0</td>
+                  <td>1</td>
+                  
+                  <td>1</td>
                   
                   <td>1</td>
                   
                   <td>0</td>
                   
-                  <td>2</td>
+                  <td>1</td>
                   
-                  <td>3</td>
+                  <td>31</td>
                   
                   <td>33</td>
                   
-                  <td>38</td>
+                  <td>116</td>
                   
-                  <td>192</td>
+                  <td>39</td>
                   
-                  <td>58</td>
+                  <td>52</td>
                   
-                  <td>108</td>
-                  
-                  <td>3616</td>
+                  <td>2223</td>
                   
                   <td>109</td>
                   
-                  <td>912282</td>
+                  <td>550730</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>200001</td>
+                  <td>251</td>
+                  
+                  <td>0</td>
                   
                   <td>1</td>
                   
                   <td>1</td>
                   
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>3</td>
-                  
                   <td>1</td>
                   
-                  <td>10</td>
+                  <td>2</td>
                   
-                  <td>0</td>
-                  
-                  <td>3</td>
-                  
-                  <td>115</td>
+                  <td>31</td>
                   
                   <td>16</td>
                   
-                  <td>30135</td>
+                  <td>117</td>
+                  
+                  <td>40</td>
+                  
+                  <td>60</td>
+                  
+                  <td>2072</td>
+                  
+                  <td>100</td>
+                  
+                  <td>506920</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>53</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
+                  <td>65</td>
                   
                   <td>0</td>
                   
                   <td>1</td>
                   
-                  <td>25</td>
+                  <td>1</td>
                   
-                  <td>16</td>
+                  <td>1</td>
                   
-                  <td>69</td>
+                  <td>2</td>
                   
-                  <td>25</td>
+                  <td>28</td>
+                  
+                  <td>15</td>
+                  
+                  <td>89</td>
+                  
+                  <td>36</td>
                   
                   <td>46</td>
                   
-                  <td>1746</td>
+                  <td>1782</td>
                   
-                  <td>53</td>
+                  <td>71</td>
                   
-                  <td>424898</td>
+                  <td>447333</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>255</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>21</td>
+                  
+                  <td>90</td>
+                  
+                  <td>42</td>
+                  
+                  <td>51</td>
+                  
+                  <td>2147</td>
+                  
+                  <td>65</td>
+                  
+                  <td>530410</td>
                   
                 </tr>
                 
@@ -1372,53 +5555,21 @@ display(features_df)
                   
                   <td>0</td>
                   
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
-                  <td>1</td>
-                  
                   <td>3</td>
                   
-                  <td>32</td>
-                  
-                  <td>40</td>
-                  
-                  <td>10432</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>200021</td>
-                  
                   <td>1</td>
                   
-                  <td>0</td>
-                  
-                  <td>0</td>
+                  <td>5</td>
                   
                   <td>0</td>
                   
                   <td>1</td>
                   
-                  <td>11</td>
+                  <td>44</td>
                   
-                  <td>35</td>
+                  <td>77</td>
                   
-                  <td>55</td>
-                  
-                  <td>19</td>
-                  
-                  <td>30</td>
-                  
-                  <td>1227</td>
-                  
-                  <td>71</td>
-                  
-                  <td>296928</td>
+                  <td>12971</td>
                   
                 </tr>
                 
@@ -1430,59 +5581,27 @@ display(features_df)
                   
                   <td>0</td>
                   
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>16</td>
-                  
-                  <td>3</td>
-                  
-                  <td>11</td>
-                  
-                  <td>2</td>
-                  
-                  <td>9</td>
-                  
-                  <td>254</td>
-                  
-                  <td>61</td>
-                  
-                  <td>61195</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300011</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
+                  <td>1</td>
                   
                   <td>0</td>
                   
                   <td>1</td>
                   
-                  <td>2</td>
+                  <td>19</td>
                   
-                  <td>21</td>
+                  <td>16</td>
                   
-                  <td>41</td>
+                  <td>66</td>
                   
-                  <td>437</td>
+                  <td>22</td>
                   
-                  <td>93</td>
+                  <td>52</td>
                   
-                  <td>146</td>
+                  <td>1266</td>
                   
-                  <td>4619</td>
+                  <td>59</td>
                   
-                  <td>62</td>
-                  
-                  <td>1150533</td>
+                  <td>306659</td>
                   
                 </tr>
                 
@@ -1494,27 +5613,27 @@ display(features_df)
                   
                   <td>0</td>
                   
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
                   <td>1</td>
                   
-                  <td>8</td>
+                  <td>0</td>
                   
-                  <td>3</td>
+                  <td>0</td>
                   
-                  <td>58</td>
+                  <td>0</td>
                   
-                  <td>11</td>
+                  <td>0</td>
                   
-                  <td>24</td>
+                  <td>7</td>
                   
-                  <td>820</td>
+                  <td>0</td>
                   
-                  <td>24</td>
+                  <td>4</td>
                   
-                  <td>197486</td>
+                  <td>140</td>
+                  
+                  <td>95</td>
+                  
+                  <td>34578</td>
                   
                 </tr>
                 
@@ -1522,37 +5641,7 @@ display(features_df)
                   
                   <td>34</td>
                   
-                  <td>0</td>
-                  
                   <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>3</td>
-                  
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
-                  <td>0</td>
-                  
-                  <td>4</td>
-                  
-                  <td>53</td>
-                  
-                  <td>71</td>
-                  
-                  <td>12316</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>101</td>
                   
                   <td>1</td>
                   
@@ -1560,67 +5649,97 @@ display(features_df)
                   
                   <td>0</td>
                   
-                  <td>0</td>
-                  
                   <td>1</td>
                   
-                  <td>8</td>
-                  
-                  <td>16</td>
-                  
-                  <td>86</td>
-                  
-                  <td>29</td>
-                  
-                  <td>61</td>
-                  
-                  <td>1797</td>
-                  
-                  <td>54</td>
-                  
-                  <td>490548</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>115</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
+                  <td>10</td>
                   
                   <td>11</td>
                   
-                  <td>24</td>
+                  <td>59</td>
                   
-                  <td>92</td>
+                  <td>19</td>
                   
-                  <td>39</td>
+                  <td>32</td>
                   
-                  <td>42</td>
+                  <td>1239</td>
                   
-                  <td>1737</td>
+                  <td>77</td>
                   
-                  <td>75</td>
-                  
-                  <td>428228</td>
+                  <td>306096</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>126</td>
+                  <td>81</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
                   
                   <td>0</td>
                   
                   <td>1</td>
+                  
+                  <td>16</td>
+                  
+                  <td>81</td>
+                  
+                  <td>17</td>
+                  
+                  <td>48</td>
+                  
+                  <td>1643</td>
+                  
+                  <td>96</td>
+                  
+                  <td>403120</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>300010</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>10</td>
+                  
+                  <td>9</td>
+                  
+                  <td>88</td>
+                  
+                  <td>20</td>
+                  
+                  <td>43</td>
+                  
+                  <td>1022</td>
+                  
+                  <td>78</td>
+                  
+                  <td>254275</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>28</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
                   
                   <td>0</td>
                   
@@ -1630,147 +5749,211 @@ display(features_df)
                   
                   <td>35</td>
                   
-                  <td>21</td>
-                  
-                  <td>135</td>
-                  
-                  <td>33</td>
-                  
-                  <td>72</td>
-                  
-                  <td>2577</td>
-                  
-                  <td>62</td>
-                  
-                  <td>643509</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>81</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
                   <td>7</td>
+                  
+                  <td>26</td>
                   
                   <td>14</td>
                   
-                  <td>94</td>
+                  <td>17</td>
+                  
+                  <td>692</td>
+                  
+                  <td>27</td>
+                  
+                  <td>170158</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>300</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>6</td>
                   
                   <td>23</td>
                   
-                  <td>51</td>
-                  
-                  <td>1974</td>
-                  
-                  <td>98</td>
-                  
-                  <td>493423</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>100005</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>18</td>
-                  
-                  <td>3</td>
-                  
-                  <td>7</td>
-                  
-                  <td>3</td>
-                  
-                  <td>3</td>
-                  
-                  <td>154</td>
-                  
-                  <td>85</td>
-                  
-                  <td>36056</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300017</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>11</td>
-                  
-                  <td>28</td>
-                  
-                  <td>303</td>
-                  
-                  <td>63</td>
-                  
-                  <td>113</td>
-                  
-                  <td>3632</td>
-                  
-                  <td>74</td>
-                  
-                  <td>881965</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>76</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>15</td>
-                  
-                  <td>2</td>
+                  <td>6</td>
                   
                   <td>13</td>
                   
-                  <td>3</td>
+                  <td>381</td>
+                  
+                  <td>115</td>
+                  
+                  <td>92515</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>100020</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>14</td>
+                  
+                  <td>2</td>
                   
                   <td>4</td>
                   
-                  <td>212</td>
+                  <td>1</td>
                   
-                  <td>57</td>
+                  <td>3</td>
                   
-                  <td>86597</td>
+                  <td>96</td>
+                  
+                  <td>89</td>
+                  
+                  <td>45539</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>200014</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>4</td>
+                  
+                  <td>3</td>
+                  
+                  <td>3</td>
+                  
+                  <td>3</td>
+                  
+                  <td>3</td>
+                  
+                  <td>101</td>
+                  
+                  <td>101</td>
+                  
+                  <td>25036</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>200028</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>2</td>
+                  
+                  <td>2</td>
+                  
+                  <td>23</td>
+                  
+                  <td>28</td>
+                  
+                  <td>39</td>
+                  
+                  <td>25</td>
+                  
+                  <td>32</td>
+                  
+                  <td>943</td>
+                  
+                  <td>49</td>
+                  
+                  <td>231751</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>103</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>21</td>
+                  
+                  <td>2</td>
+                  
+                  <td>21</td>
+                  
+                  <td>9</td>
+                  
+                  <td>17</td>
+                  
+                  <td>423</td>
+                  
+                  <td>64</td>
+                  
+                  <td>101151</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>236</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>3</td>
+                  
+                  <td>20</td>
+                  
+                  <td>19</td>
+                  
+                  <td>10</td>
+                  
+                  <td>466</td>
+                  
+                  <td>99</td>
+                  
+                  <td>119805</td>
                   
                 </tr>
                 
@@ -1786,87 +5969,23 @@ display(features_df)
                   
                   <td>1</td>
                   
-                  <td>1</td>
-                  
-                  <td>10</td>
-                  
-                  <td>17</td>
-                  
-                  <td>28</td>
-                  
-                  <td>8</td>
-                  
-                  <td>18</td>
-                  
-                  <td>495</td>
-                  
-                  <td>56</td>
-                  
-                  <td>119002</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>12</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
                   <td>2</td>
                   
-                  <td>21</td>
+                  <td>33</td>
                   
-                  <td>9</td>
+                  <td>41</td>
                   
-                  <td>42</td>
-                  
-                  <td>13</td>
-                  
-                  <td>19</td>
-                  
-                  <td>867</td>
-                  
-                  <td>73</td>
-                  
-                  <td>247073</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300006</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
+                  <td>67</td>
                   
                   <td>14</td>
                   
-                  <td>3</td>
+                  <td>31</td>
                   
-                  <td>23</td>
+                  <td>1202</td>
                   
-                  <td>17</td>
+                  <td>65</td>
                   
-                  <td>7</td>
-                  
-                  <td>279</td>
-                  
-                  <td>89</td>
-                  
-                  <td>65964</td>
+                  <td>296997</td>
                   
                 </tr>
                 
@@ -1874,8 +5993,6 @@ display(features_df)
                   
                   <td>100016</td>
                   
-                  <td>0</td>
-                  
                   <td>1</td>
                   
                   <td>1</td>
@@ -1884,21 +6001,23 @@ display(features_df)
                   
                   <td>0</td>
                   
-                  <td>16</td>
-                  
-                  <td>5</td>
-                  
-                  <td>25</td>
-                  
-                  <td>13</td>
+                  <td>1</td>
                   
                   <td>6</td>
                   
-                  <td>530</td>
+                  <td>0</td>
                   
-                  <td>75</td>
+                  <td>8</td>
                   
-                  <td>127394</td>
+                  <td>2</td>
+                  
+                  <td>6</td>
+                  
+                  <td>163</td>
+                  
+                  <td>40</td>
+                  
+                  <td>40908</td>
                   
                 </tr>
                 
@@ -1914,55 +6033,119 @@ display(features_df)
                   
                   <td>0</td>
                   
-                  <td>1</td>
+                  <td>0</td>
+                  
+                  <td>43</td>
+                  
+                  <td>2</td>
+                  
+                  <td>21</td>
+                  
+                  <td>10</td>
                   
                   <td>5</td>
                   
-                  <td>24</td>
-                  
-                  <td>124</td>
-                  
-                  <td>42</td>
-                  
-                  <td>64</td>
-                  
-                  <td>2580</td>
+                  <td>417</td>
                   
                   <td>116</td>
                   
-                  <td>637146</td>
+                  <td>99994</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>100001</td>
+                  <td>200033</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>2</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>6</td>
+                  
+                  <td>38</td>
+                  
+                  <td>1199</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>222</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>59</td>
+                  
+                  <td>4</td>
+                  
+                  <td>29</td>
+                  
+                  <td>10</td>
+                  
+                  <td>13</td>
+                  
+                  <td>560</td>
+                  
+                  <td>67</td>
+                  
+                  <td>139996</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>285</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
                   
                   <td>1</td>
                   
-                  <td>0</td>
+                  <td>1</td>
                   
-                  <td>0</td>
+                  <td>9</td>
                   
-                  <td>0</td>
+                  <td>5</td>
                   
-                  <td>0</td>
+                  <td>34</td>
                   
-                  <td>14</td>
+                  <td>19</td>
                   
-                  <td>2</td>
+                  <td>21</td>
                   
-                  <td>8</td>
+                  <td>563</td>
                   
-                  <td>2</td>
+                  <td>113</td>
                   
-                  <td>3</td>
-                  
-                  <td>133</td>
-                  
-                  <td>45</td>
-                  
-                  <td>35558</td>
+                  <td>134703</td>
                   
                 </tr>
                 
@@ -1980,53 +6163,21 @@ display(features_df)
                   
                   <td>0</td>
                   
-                  <td>4</td>
-                  
-                  <td>0</td>
-                  
-                  <td>3</td>
-                  
-                  <td>3</td>
-                  
-                  <td>0</td>
-                  
-                  <td>28</td>
-                  
-                  <td>61</td>
-                  
-                  <td>6398</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>128</td>
+                  <td>5</td>
                   
                   <td>0</td>
                   
                   <td>1</td>
                   
-                  <td>0</td>
-                  
-                  <td>0</td>
+                  <td>1</td>
                   
                   <td>1</td>
                   
-                  <td>11</td>
+                  <td>62</td>
                   
-                  <td>18</td>
+                  <td>37</td>
                   
-                  <td>87</td>
-                  
-                  <td>28</td>
-                  
-                  <td>53</td>
-                  
-                  <td>1728</td>
-                  
-                  <td>95</td>
-                  
-                  <td>424958</td>
+                  <td>14242</td>
                   
                 </tr>
                 
@@ -2034,103 +6185,133 @@ display(features_df)
                   
                   <td>122</td>
                   
-                  <td>1</td>
-                  
                   <td>0</td>
                   
                   <td>0</td>
                   
                   <td>0</td>
                   
-                  <td>1</td>
-                  
-                  <td>2</td>
-                  
-                  <td>1</td>
-                  
-                  <td>3</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>41</td>
-                  
-                  <td>53</td>
-                  
-                  <td>9026</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>93</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
                   <td>0</td>
                   
                   <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>43</td>
-                  
-                  <td>4</td>
-                  
-                  <td>35</td>
-                  
-                  <td>13</td>
                   
                   <td>17</td>
                   
-                  <td>640</td>
+                  <td>3</td>
                   
-                  <td>71</td>
+                  <td>13</td>
                   
-                  <td>155952</td>
+                  <td>6</td>
+                  
+                  <td>4</td>
+                  
+                  <td>286</td>
+                  
+                  <td>86</td>
+                  
+                  <td>70958</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>111</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
+                  <td>232</td>
                   
                   <td>0</td>
                   
                   <td>0</td>
                   
                   <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>2</td>
+                  
+                  <td>38</td>
+                  
+                  <td>17</td>
+                  
+                  <td>97</td>
+                  
+                  <td>43</td>
+                  
+                  <td>61</td>
+                  
+                  <td>1876</td>
+                  
+                  <td>107</td>
+                  
+                  <td>456945</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>100039</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>13</td>
+                  
+                  <td>2</td>
+                  
+                  <td>7</td>
+                  
+                  <td>0</td>
                   
                   <td>3</td>
                   
-                  <td>6</td>
+                  <td>107</td>
                   
-                  <td>34</td>
+                  <td>107</td>
                   
-                  <td>23</td>
-                  
-                  <td>21</td>
-                  
-                  <td>698</td>
-                  
-                  <td>82</td>
-                  
-                  <td>194266</td>
+                  <td>24764</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>300024</td>
+                  <td>200004</td>
                   
                   <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>98</td>
+                  
+                  <td>42</td>
+                  
+                  <td>80</td>
+                  
+                  <td>16</td>
+                  
+                  <td>40</td>
+                  
+                  <td>1430</td>
+                  
+                  <td>67</td>
+                  
+                  <td>348674</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>200022</td>
                   
                   <td>0</td>
                   
@@ -2142,51 +6323,21 @@ display(features_df)
                   
                   <td>0</td>
                   
-                  <td>0</td>
+                  <td>26</td>
                   
-                  <td>6</td>
+                  <td>8</td>
                   
-                  <td>2</td>
+                  <td>17</td>
                   
-                  <td>2</td>
-                  
-                  <td>88</td>
-                  
-                  <td>39</td>
-                  
-                  <td>22889</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>47</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>15</td>
-                  
-                  <td>2</td>
+                  <td>5</td>
                   
                   <td>10</td>
                   
-                  <td>0</td>
+                  <td>356</td>
                   
-                  <td>3</td>
+                  <td>88</td>
                   
-                  <td>202</td>
-                  
-                  <td>132</td>
-                  
-                  <td>47131</td>
+                  <td>90235</td>
                   
                 </tr>
                 
@@ -2194,127 +6345,127 @@ display(features_df)
                   
                   <td>140</td>
                   
-                  <td>0</td>
+                  <td>1</td>
                   
                   <td>0</td>
                   
                   <td>0</td>
                   
-                  <td>3</td>
+                  <td>2</td>
                   
-                  <td>4</td>
-                  
-                  <td>87</td>
-                  
-                  <td>75</td>
-                  
-                  <td>277</td>
-                  
-                  <td>143</td>
-                  
-                  <td>148</td>
-                  
-                  <td>5664</td>
+                  <td>2</td>
                   
                   <td>80</td>
                   
-                  <td>1397558</td>
+                  <td>59</td>
+                  
+                  <td>319</td>
+                  
+                  <td>125</td>
+                  
+                  <td>165</td>
+                  
+                  <td>6233</td>
+                  
+                  <td>80</td>
+                  
+                  <td>1537605</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>100024</td>
+                  <td>100050</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
                   
                   <td>1</td>
                   
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
                   <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
                   
                   <td>3</td>
                   
-                  <td>0</td>
-                  
-                  <td>5</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>22</td>
-                  
-                  <td>27</td>
-                  
-                  <td>5115</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300014</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>8</td>
-                  
-                  <td>27</td>
-                  
-                  <td>3</td>
+                  <td>16</td>
                   
                   <td>10</td>
                   
-                  <td>280</td>
-                  
-                  <td>100</td>
-                  
-                  <td>69810</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>146</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>56</td>
-                  
                   <td>9</td>
                   
-                  <td>38</td>
-                  
-                  <td>9</td>
-                  
-                  <td>13</td>
-                  
-                  <td>650</td>
+                  <td>354</td>
                   
                   <td>86</td>
                   
-                  <td>162001</td>
+                  <td>83219</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>52</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>52</td>
+                  
+                  <td>7</td>
+                  
+                  <td>44</td>
+                  
+                  <td>17</td>
+                  
+                  <td>24</td>
+                  
+                  <td>888</td>
+                  
+                  <td>103</td>
+                  
+                  <td>254295</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>297</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>19</td>
+                  
+                  <td>45</td>
+                  
+                  <td>4447</td>
                   
                 </tr>
                 
@@ -2322,63 +6473,159 @@ display(features_df)
                   
                   <td>13</td>
                   
-                  <td>0</td>
+                  <td>1</td>
                   
                   <td>0</td>
                   
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
-                  <td>2</td>
-                  
-                  <td>74</td>
-                  
-                  <td>14</td>
-                  
-                  <td>57</td>
-                  
-                  <td>32</td>
-                  
-                  <td>37</td>
-                  
-                  <td>1280</td>
-                  
-                  <td>119</td>
-                  
-                  <td>306123</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>100010</td>
+                  <td>1</td>
                   
                   <td>0</td>
                   
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
+                  <td>1</td>
                   
                   <td>52</td>
                   
-                  <td>5</td>
-                  
-                  <td>17</td>
-                  
                   <td>4</td>
+                  
+                  <td>21</td>
+                  
+                  <td>11</td>
+                  
+                  <td>10</td>
+                  
+                  <td>439</td>
+                  
+                  <td>76</td>
+                  
+                  <td>110289</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>280</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
                   
                   <td>7</td>
                   
-                  <td>275</td>
+                  <td>0</td>
                   
-                  <td>55</td>
+                  <td>1</td>
                   
-                  <td>64883</td>
+                  <td>5</td>
+                  
+                  <td>0</td>
+                  
+                  <td>49</td>
+                  
+                  <td>100</td>
+                  
+                  <td>10699</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>16</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>21</td>
+                  
+                  <td>7</td>
+                  
+                  <td>40</td>
+                  
+                  <td>10</td>
+                  
+                  <td>17</td>
+                  
+                  <td>671</td>
+                  
+                  <td>53</td>
+                  
+                  <td>166008</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>86</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>18</td>
+                  
+                  <td>18</td>
+                  
+                  <td>73</td>
+                  
+                  <td>34</td>
+                  
+                  <td>36</td>
+                  
+                  <td>1660</td>
+                  
+                  <td>137</td>
+                  
+                  <td>409073</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>100048</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>2</td>
+                  
+                  <td>2</td>
+                  
+                  <td>8</td>
+                  
+                  <td>1</td>
+                  
+                  <td>9</td>
+                  
+                  <td>165</td>
+                  
+                  <td>89</td>
+                  
+                  <td>42165</td>
                   
                 </tr>
                 
@@ -2386,9 +6633,7 @@ display(features_df)
                   
                   <td>3</td>
                   
-                  <td>1</td>
-                  
-                  <td>1</td>
+                  <td>0</td>
                   
                   <td>1</td>
                   
@@ -2396,21 +6641,23 @@ display(features_df)
                   
                   <td>0</td>
                   
-                  <td>1</td>
-                  
-                  <td>3</td>
-                  
-                  <td>14</td>
+                  <td>0</td>
                   
                   <td>1</td>
                   
-                  <td>4</td>
+                  <td>0</td>
                   
-                  <td>214</td>
+                  <td>0</td>
                   
-                  <td>81</td>
+                  <td>0</td>
                   
-                  <td>59382</td>
+                  <td>0</td>
+                  
+                  <td>24</td>
+                  
+                  <td>110</td>
+                  
+                  <td>6254</td>
                   
                 </tr>
                 
@@ -2422,27 +6669,27 @@ display(features_df)
                   
                   <td>1</td>
                   
-                  <td>0</td>
+                  <td>1</td>
                   
                   <td>0</td>
                   
                   <td>1</td>
                   
-                  <td>3</td>
+                  <td>27</td>
                   
-                  <td>13</td>
+                  <td>31</td>
                   
-                  <td>111</td>
+                  <td>104</td>
                   
-                  <td>28</td>
+                  <td>34</td>
                   
-                  <td>50</td>
+                  <td>48</td>
                   
-                  <td>1875</td>
+                  <td>1916</td>
                   
                   <td>63</td>
                   
-                  <td>472475</td>
+                  <td>481158</td>
                   
                 </tr>
                 
@@ -2456,67 +6703,31 @@ display(features_df)
                   
                   <td>1</td>
                   
-                  <td>2</td>
+                  <td>0</td>
                   
-                  <td>2</td>
+                  <td>0</td>
                   
-                  <td>20</td>
+                  <td>1</td>
                   
-                  <td>21</td>
+                  <td>23</td>
                   
-                  <td>106</td>
+                  <td>115</td>
                   
-                  <td>25</td>
+                  <td>42</td>
                   
-                  <td>54</td>
+                  <td>62</td>
                   
-                  <td>1807</td>
+                  <td>2158</td>
                   
-                  <td>77</td>
+                  <td>76</td>
                   
-                  <td>447916</td>
+                  <td>534216</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>94</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>12</td>
-                  
-                  <td>1</td>
-                  
-                  <td>4</td>
-                  
-                  <td>1</td>
-                  
-                  <td>3</td>
-                  
-                  <td>146</td>
-                  
-                  <td>133</td>
-                  
-                  <td>36287</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>54</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
+                  <td>164</td>
                   
                   <td>1</td>
                   
@@ -2524,29 +6735,31 @@ display(features_df)
                   
                   <td>1</td>
                   
-                  <td>47</td>
+                  <td>0</td>
                   
-                  <td>29</td>
+                  <td>1</td>
                   
-                  <td>163</td>
+                  <td>31</td>
                   
-                  <td>33</td>
+                  <td>8</td>
                   
-                  <td>72</td>
+                  <td>64</td>
                   
-                  <td>2841</td>
+                  <td>10</td>
                   
-                  <td>110</td>
+                  <td>35</td>
                   
-                  <td>715483</td>
-                  
-                </tr>
-                
-                <tr>
+                  <td>1270</td>
                   
                   <td>120</td>
                   
-                  <td>0</td>
+                  <td>319415</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>169</td>
                   
                   <td>0</td>
                   
@@ -2556,21 +6769,119 @@ display(features_df)
                   
                   <td>0</td>
                   
-                  <td>1</td>
+                  <td>0</td>
                   
                   <td>13</td>
                   
-                  <td>81</td>
+                  <td>0</td>
                   
-                  <td>22</td>
+                  <td>6</td>
+                  
+                  <td>6</td>
+                  
+                  <td>0</td>
+                  
+                  <td>112</td>
+                  
+                  <td>79</td>
+                  
+                  <td>26208</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>283</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>8</td>
+                  
+                  <td>35</td>
+                  
+                  <td>193</td>
+                  
+                  <td>53</td>
+                  
+                  <td>108</td>
+                  
+                  <td>3487</td>
+                  
+                  <td>61</td>
+                  
+                  <td>848106</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>100027</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>20</td>
+                  
+                  <td>5</td>
+                  
+                  <td>18</td>
+                  
+                  <td>29</td>
+                  
+                  <td>12</td>
+                  
+                  <td>483</td>
+                  
+                  <td>96</td>
+                  
+                  <td>123839</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>57</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>2</td>
+                  
+                  <td>7</td>
+                  
+                  <td>3</td>
+                  
+                  <td>6</td>
+                  
+                  <td>176</td>
                   
                   <td>44</td>
                   
-                  <td>1571</td>
-                  
-                  <td>129</td>
-                  
-                  <td>389799</td>
+                  <td>43629</td>
                   
                 </tr>
                 
@@ -2582,27 +6893,27 @@ display(features_df)
                   
                   <td>1</td>
                   
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
                   <td>1</td>
                   
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
                   <td>2</td>
                   
-                  <td>11</td>
+                  <td>3</td>
                   
-                  <td>5</td>
+                  <td>42</td>
                   
-                  <td>2663</td>
+                  <td>17</td>
+                  
+                  <td>33</td>
+                  
+                  <td>24</td>
+                  
+                  <td>24</td>
+                  
+                  <td>1021</td>
+                  
+                  <td>56</td>
+                  
+                  <td>250711</td>
                   
                 </tr>
                 
@@ -2616,97 +6927,95 @@ display(features_df)
                   
                   <td>1</td>
                   
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>17</td>
-                  
-                  <td>24</td>
-                  
-                  <td>92</td>
-                  
-                  <td>40</td>
-                  
-                  <td>52</td>
-                  
-                  <td>1802</td>
-                  
-                  <td>74</td>
-                  
-                  <td>447301</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>5</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
                   <td>0</td>
                   
                   <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>11</td>
-                  
-                  <td>0</td>
-                  
-                  <td>11</td>
                   
                   <td>3</td>
                   
-                  <td>8</td>
+                  <td>20</td>
                   
-                  <td>161</td>
+                  <td>78</td>
                   
-                  <td>49</td>
+                  <td>36</td>
                   
-                  <td>38229</td>
+                  <td>60</td>
+                  
+                  <td>1950</td>
+                  
+                  <td>70</td>
+                  
+                  <td>483130</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>19</td>
+                  <td>235</td>
+                  
+                  <td>0</td>
                   
                   <td>0</td>
                   
                   <td>0</td>
                   
                   <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
                   
                   <td>2</td>
                   
-                  <td>5</td>
+                  <td>21</td>
                   
-                  <td>4</td>
+                  <td>3</td>
                   
-                  <td>8</td>
+                  <td>26</td>
                   
-                  <td>216</td>
+                  <td>10</td>
                   
-                  <td>22</td>
+                  <td>15</td>
                   
-                  <td>54292</td>
+                  <td>539</td>
+                  
+                  <td>77</td>
+                  
+                  <td>133705</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>92</td>
+                  <td>100031</td>
                   
                   <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>37</td>
+                  
+                  <td>2</td>
+                  
+                  <td>9</td>
+                  
+                  <td>6</td>
+                  
+                  <td>3</td>
+                  
+                  <td>249</td>
+                  
+                  <td>182</td>
+                  
+                  <td>59388</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>268</td>
                   
                   <td>0</td>
                   
@@ -2714,23 +7023,25 @@ display(features_df)
                   
                   <td>1</td>
                   
+                  <td>0</td>
+                  
                   <td>1</td>
                   
-                  <td>85</td>
+                  <td>13</td>
                   
-                  <td>72</td>
+                  <td>7</td>
                   
-                  <td>292</td>
+                  <td>44</td>
                   
-                  <td>110</td>
+                  <td>16</td>
                   
-                  <td>181</td>
+                  <td>22</td>
                   
-                  <td>5945</td>
+                  <td>835</td>
                   
-                  <td>83</td>
+                  <td>63</td>
                   
-                  <td>1469115</td>
+                  <td>215666</td>
                   
                 </tr>
                 
@@ -2738,40 +7049,6 @@ display(features_df)
                   
                   <td>154</td>
                   
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>10</td>
-                  
-                  <td>0</td>
-                  
-                  <td>11</td>
-                  
-                  <td>3</td>
-                  
-                  <td>1</td>
-                  
-                  <td>84</td>
-                  
-                  <td>24</td>
-                  
-                  <td>19923</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>100014</td>
-                  
-                  <td>1</td>
-                  
                   <td>1</td>
                   
                   <td>1</td>
@@ -2779,92 +7056,32 @@ display(features_df)
                   <td>0</td>
                   
                   <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>9</td>
                   
                   <td>2</td>
-                  
-                  <td>3</td>
-                  
-                  <td>17</td>
-                  
-                  <td>6</td>
-                  
-                  <td>7</td>
-                  
-                  <td>257</td>
-                  
-                  <td>85</td>
-                  
-                  <td>66533</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>100023</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>6</td>
-                  
-                  <td>2</td>
-                  
-                  <td>10</td>
-                  
-                  <td>14</td>
-                  
-                  <td>11</td>
-                  
-                  <td>407</td>
-                  
-                  <td>33</td>
-                  
-                  <td>102696</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>37</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
                   
                   <td>4</td>
                   
+                  <td>4</td>
+                  
+                  <td>4</td>
+                  
+                  <td>93</td>
+                  
                   <td>11</td>
                   
-                  <td>75</td>
-                  
-                  <td>33</td>
-                  
-                  <td>37</td>
-                  
-                  <td>1412</td>
-                  
-                  <td>94</td>
-                  
-                  <td>353530</td>
+                  <td>22515</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>61</td>
+                  <td>300046</td>
+                  
+                  <td>0</td>
                   
                   <td>0</td>
                   
@@ -2872,25 +7089,119 @@ display(features_df)
                   
                   <td>0</td>
                   
-                  <td>2</td>
+                  <td>1</td>
                   
-                  <td>2</td>
+                  <td>6</td>
                   
-                  <td>49</td>
-                  
-                  <td>11</td>
-                  
-                  <td>78</td>
-                  
-                  <td>26</td>
+                  <td>8</td>
                   
                   <td>50</td>
                   
-                  <td>1622</td>
+                  <td>14</td>
                   
-                  <td>72</td>
+                  <td>23</td>
                   
-                  <td>492077</td>
+                  <td>636</td>
+                  
+                  <td>76</td>
+                  
+                  <td>155876</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>262</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>11</td>
+                  
+                  <td>0</td>
+                  
+                  <td>7</td>
+                  
+                  <td>0</td>
+                  
+                  <td>4</td>
+                  
+                  <td>117</td>
+                  
+                  <td>90</td>
+                  
+                  <td>26711</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>269</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>30</td>
+                  
+                  <td>36</td>
+                  
+                  <td>161</td>
+                  
+                  <td>71</td>
+                  
+                  <td>73</td>
+                  
+                  <td>2900</td>
+                  
+                  <td>89</td>
+                  
+                  <td>750481</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>37</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>50</td>
+                  
+                  <td>1</td>
+                  
+                  <td>37</td>
+                  
+                  <td>12</td>
+                  
+                  <td>15</td>
+                  
+                  <td>492</td>
+                  
+                  <td>96</td>
+                  
+                  <td>120368</td>
                   
                 </tr>
                 
@@ -2898,165 +7209,7 @@ display(features_df)
                   
                   <td>88</td>
                   
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
                   <td>1</td>
-                  
-                  <td>23</td>
-                  
-                  <td>20</td>
-                  
-                  <td>122</td>
-                  
-                  <td>28</td>
-                  
-                  <td>58</td>
-                  
-                  <td>2045</td>
-                  
-                  <td>76</td>
-                  
-                  <td>514685</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>107</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>19</td>
-                  
-                  <td>2</td>
-                  
-                  <td>14</td>
-                  
-                  <td>2</td>
-                  
-                  <td>10</td>
-                  
-                  <td>246</td>
-                  
-                  <td>74</td>
-                  
-                  <td>61515</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300013</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
-                  <td>38</td>
-                  
-                  <td>8</td>
-                  
-                  <td>7</td>
-                  
-                  <td>335</td>
-                  
-                  <td>90</td>
-                  
-                  <td>83706</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>72</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>10</td>
-                  
-                  <td>1</td>
-                  
-                  <td>6</td>
-                  
-                  <td>3</td>
-                  
-                  <td>3</td>
-                  
-                  <td>85</td>
-                  
-                  <td>124</td>
-                  
-                  <td>20059</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>200016</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>18</td>
-                  
-                  <td>5</td>
-                  
-                  <td>19</td>
-                  
-                  <td>0</td>
-                  
-                  <td>3</td>
-                  
-                  <td>206</td>
-                  
-                  <td>56</td>
-                  
-                  <td>50518</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>200025</td>
                   
                   <td>0</td>
                   
@@ -3065,184 +7218,246 @@ display(features_df)
                   <td>0</td>
                   
                   <td>1</td>
-                  
-                  <td>2</td>
-                  
-                  <td>37</td>
-                  
-                  <td>27</td>
-                  
-                  <td>48</td>
-                  
-                  <td>24</td>
-                  
-                  <td>16</td>
-                  
-                  <td>790</td>
-                  
-                  <td>117</td>
-                  
-                  <td>191989</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>35</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
-                  <td>2</td>
-                  
-                  <td>55</td>
-                  
-                  <td>14</td>
-                  
-                  <td>71</td>
-                  
-                  <td>31</td>
-                  
-                  <td>64</td>
-                  
-                  <td>1610</td>
-                  
-                  <td>76</td>
-                  
-                  <td>396855</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>114</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>9</td>
                   
                   <td>12</td>
                   
-                  <td>74</td>
+                  <td>21</td>
                   
-                  <td>13</td>
+                  <td>104</td>
                   
-                  <td>34</td>
+                  <td>49</td>
                   
-                  <td>1292</td>
+                  <td>51</td>
                   
-                  <td>71</td>
+                  <td>1975</td>
                   
-                  <td>324432</td>
+                  <td>56</td>
                   
-                </tr>
-                
-                <tr>
-                  
-                  <td>4</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>4</td>
-                  
-                  <td>26</td>
-                  
-                  <td>95</td>
-                  
-                  <td>46</td>
-                  
-                  <td>59</td>
-                  
-                  <td>2048</td>
-                  
-                  <td>63</td>
-                  
-                  <td>500727</td>
+                  <td>491844</td>
                   
                 </tr>
                 
                 <tr>
-                  
-                  <td>55</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>29</td>
-                  
-                  <td>5</td>
                   
                   <td>17</td>
                   
-                  <td>8</td>
-                  
-                  <td>13</td>
-                  
-                  <td>381</td>
-                  
-                  <td>71</td>
-                  
-                  <td>107148</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>59</td>
+                  <td>0</td>
                   
                   <td>0</td>
                   
                   <td>1</td>
                   
                   <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>48</td>
+                  
+                  <td>21</td>
+                  
+                  <td>84</td>
+                  
+                  <td>15</td>
+                  
+                  <td>67</td>
+                  
+                  <td>1693</td>
+                  
+                  <td>61</td>
+                  
+                  <td>464182</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>286</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>3</td>
+                  
+                  <td>2</td>
+                  
+                  <td>7</td>
+                  
+                  <td>0</td>
+                  
+                  <td>7</td>
+                  
+                  <td>245</td>
+                  
+                  <td>63</td>
+                  
+                  <td>60842</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>175</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>83</td>
+                  
+                  <td>13</td>
+                  
+                  <td>112</td>
+                  
+                  <td>39</td>
+                  
+                  <td>55</td>
+                  
+                  <td>2049</td>
+                  
+                  <td>69</td>
+                  
+                  <td>507035</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>300049</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
                   
                   <td>1</td>
                   
                   <td>2</td>
                   
-                  <td>11</td>
+                  <td>41</td>
                   
-                  <td>9</td>
+                  <td>70</td>
                   
-                  <td>30</td>
+                  <td>506</td>
                   
-                  <td>16</td>
+                  <td>140</td>
+                  
+                  <td>191</td>
+                  
+                  <td>5879</td>
+                  
+                  <td>70</td>
+                  
+                  <td>1452559</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>100046</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>40</td>
+                  
+                  <td>5</td>
+                  
+                  <td>24</td>
+                  
+                  <td>2</td>
+                  
+                  <td>8</td>
+                  
+                  <td>487</td>
+                  
+                  <td>103</td>
+                  
+                  <td>120422</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>300051</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>4</td>
+                  
+                  <td>12</td>
+                  
+                  <td>85</td>
+                  
+                  <td>26</td>
+                  
+                  <td>33</td>
+                  
+                  <td>869</td>
+                  
+                  <td>26</td>
+                  
+                  <td>210807</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>59</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>40</td>
+                  
+                  <td>2</td>
+                  
+                  <td>17</td>
                   
                   <td>14</td>
                   
-                  <td>724</td>
+                  <td>15</td>
                   
-                  <td>65</td>
+                  <td>534</td>
                   
-                  <td>192058</td>
+                  <td>64</td>
+                  
+                  <td>146690</td>
                   
                 </tr>
                 
@@ -3260,21 +7475,53 @@ display(features_df)
                   
                   <td>0</td>
                   
-                  <td>18</td>
+                  <td>1</td>
                   
-                  <td>3</td>
+                  <td>0</td>
                   
-                  <td>16</td>
+                  <td>0</td>
                   
-                  <td>5</td>
+                  <td>0</td>
                   
-                  <td>6</td>
+                  <td>1</td>
                   
-                  <td>251</td>
+                  <td>25</td>
                   
-                  <td>115</td>
+                  <td>82</td>
                   
-                  <td>61690</td>
+                  <td>5800</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>100</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>8</td>
+                  
+                  <td>37</td>
+                  
+                  <td>143</td>
+                  
+                  <td>71</td>
+                  
+                  <td>94</td>
+                  
+                  <td>3382</td>
+                  
+                  <td>65</td>
+                  
+                  <td>820118</td>
                   
                 </tr>
                 
@@ -3290,319 +7537,61 @@ display(features_df)
                   
                   <td>0</td>
                   
-                  <td>1</td>
-                  
-                  <td>39</td>
-                  
-                  <td>15</td>
-                  
-                  <td>39</td>
-                  
-                  <td>28</td>
-                  
-                  <td>31</td>
-                  
-                  <td>1131</td>
-                  
-                  <td>44</td>
-                  
-                  <td>277199</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>23</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>19</td>
-                  
-                  <td>6</td>
-                  
-                  <td>28</td>
-                  
-                  <td>15</td>
-                  
-                  <td>21</td>
-                  
-                  <td>656</td>
-                  
-                  <td>136</td>
-                  
-                  <td>163813</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>200023</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
                   <td>0</td>
                   
                   <td>2</td>
                   
-                  <td>3</td>
-                  
-                  <td>116</td>
-                  
-                  <td>73</td>
-                  
-                  <td>163</td>
-                  
-                  <td>66</td>
-                  
-                  <td>73</td>
-                  
-                  <td>2955</td>
-                  
-                  <td>67</td>
-                  
-                  <td>757076</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>49</td>
-                  
-                  <td>0</td>
-                  
                   <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>11</td>
-                  
-                  <td>7</td>
-                  
-                  <td>47</td>
-                  
-                  <td>22</td>
-                  
-                  <td>28</td>
-                  
-                  <td>878</td>
-                  
-                  <td>107</td>
-                  
-                  <td>213814</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>100002</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>3</td>
-                  
-                  <td>0</td>
-                  
-                  <td>5</td>
-                  
-                  <td>1</td>
-                  
-                  <td>5</td>
-                  
-                  <td>195</td>
-                  
-                  <td>161</td>
-                  
-                  <td>48284</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300018</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>3</td>
-                  
-                  <td>24</td>
-                  
-                  <td>132</td>
-                  
-                  <td>35</td>
-                  
-                  <td>58</td>
-                  
-                  <td>1640</td>
-                  
-                  <td>92</td>
-                  
-                  <td>409027</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>136</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>13</td>
-                  
-                  <td>15</td>
-                  
-                  <td>110</td>
-                  
-                  <td>60</td>
-                  
-                  <td>66</td>
-                  
-                  <td>2124</td>
-                  
-                  <td>76</td>
-                  
-                  <td>573780</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>87</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>50</td>
-                  
-                  <td>5</td>
-                  
-                  <td>32</td>
-                  
-                  <td>27</td>
-                  
-                  <td>19</td>
-                  
-                  <td>767</td>
-                  
-                  <td>59</td>
-                  
-                  <td>188431</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>200015</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>22</td>
-                  
-                  <td>10</td>
-                  
-                  <td>10</td>
                   
                   <td>2</td>
                   
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>20</td>
+                  
                   <td>13</td>
                   
-                  <td>258</td>
+                  <td>4525</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>200020</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>2</td>
+                  
+                  <td>3</td>
                   
                   <td>88</td>
                   
-                  <td>59488</td>
+                  <td>66</td>
+                  
+                  <td>109</td>
+                  
+                  <td>35</td>
+                  
+                  <td>54</td>
+                  
+                  <td>2112</td>
+                  
+                  <td>79</td>
+                  
+                  <td>514153</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>97</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>24</td>
-                  
-                  <td>12</td>
-                  
-                  <td>108</td>
-                  
-                  <td>32</td>
-                  
-                  <td>61</td>
-                  
-                  <td>1975</td>
-                  
-                  <td>87</td>
-                  
-                  <td>482994</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>10</td>
-                  
-                  <td>0</td>
+                  <td>130</td>
                   
                   <td>1</td>
                   
@@ -3612,155 +7601,29 @@ display(features_df)
                   
                   <td>0</td>
                   
-                  <td>1</td>
-                  
-                  <td>4</td>
-                  
-                  <td>37</td>
-                  
-                  <td>12</td>
-                  
-                  <td>9</td>
-                  
-                  <td>673</td>
-                  
-                  <td>52</td>
-                  
-                  <td>165509</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>50</td>
-                  
                   <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>37</td>
-                  
-                  <td>3</td>
-                  
-                  <td>27</td>
-                  
-                  <td>9</td>
-                  
-                  <td>12</td>
-                  
-                  <td>503</td>
-                  
-                  <td>75</td>
-                  
-                  <td>126852</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300012</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>4</td>
-                  
-                  <td>7</td>
-                  
-                  <td>52</td>
-                  
-                  <td>16</td>
-                  
-                  <td>14</td>
-                  
-                  <td>642</td>
-                  
-                  <td>150</td>
-                  
-                  <td>158133</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300016</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>2</td>
-                  
-                  <td>4</td>
-                  
-                  <td>56</td>
-                  
-                  <td>11</td>
-                  
-                  <td>26</td>
-                  
-                  <td>583</td>
-                  
-                  <td>101</td>
-                  
-                  <td>141812</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>45</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>13</td>
-                  
-                  <td>13</td>
-                  
-                  <td>67</td>
                   
                   <td>22</td>
                   
-                  <td>43</td>
+                  <td>2</td>
                   
-                  <td>1484</td>
+                  <td>14</td>
                   
-                  <td>81</td>
+                  <td>8</td>
                   
-                  <td>364594</td>
+                  <td>11</td>
+                  
+                  <td>272</td>
+                  
+                  <td>62</td>
+                  
+                  <td>69829</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>38</td>
+                  <td>171</td>
                   
                   <td>0</td>
                   
@@ -3768,25 +7631,153 @@ display(features_df)
                   
                   <td>1</td>
                   
-                  <td>1</td>
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>5</td>
+                  
+                  <td>23</td>
+                  
+                  <td>12</td>
+                  
+                  <td>19</td>
+                  
+                  <td>695</td>
+                  
+                  <td>61</td>
+                  
+                  <td>175567</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>194</td>
+                  
+                  <td>0</td>
                   
                   <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>7</td>
+                  
+                  <td>1</td>
+                  
+                  <td>5</td>
+                  
+                  <td>4</td>
+                  
+                  <td>3</td>
+                  
+                  <td>121</td>
+                  
+                  <td>77</td>
+                  
+                  <td>57617</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>129</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
                   
                   <td>2</td>
                   
-                  <td>21</td>
+                  <td>2</td>
                   
-                  <td>65</td>
+                  <td>54</td>
                   
-                  <td>21</td>
+                  <td>19</td>
                   
-                  <td>30</td>
+                  <td>99</td>
                   
-                  <td>1322</td>
+                  <td>23</td>
                   
-                  <td>75</td>
+                  <td>59</td>
                   
-                  <td>328596</td>
+                  <td>1941</td>
+                  
+                  <td>61</td>
+                  
+                  <td>476264</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>216</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>8</td>
+                  
+                  <td>15</td>
+                  
+                  <td>80</td>
+                  
+                  <td>37</td>
+                  
+                  <td>52</td>
+                  
+                  <td>1695</td>
+                  
+                  <td>116</td>
+                  
+                  <td>428958</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>288</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>18</td>
+                  
+                  <td>13</td>
+                  
+                  <td>77</td>
+                  
+                  <td>27</td>
+                  
+                  <td>37</td>
+                  
+                  <td>1334</td>
+                  
+                  <td>226</td>
+                  
+                  <td>328117</td>
                   
                 </tr>
                 
@@ -3798,27 +7789,59 @@ display(features_df)
                   
                   <td>0</td>
                   
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>12</td>
+                  
+                  <td>10</td>
+                  
+                  <td>58</td>
+                  
+                  <td>26</td>
+                  
+                  <td>29</td>
+                  
+                  <td>1121</td>
+                  
+                  <td>55</td>
+                  
+                  <td>275551</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>240</td>
+                  
                   <td>0</td>
                   
                   <td>0</td>
                   
                   <td>0</td>
                   
-                  <td>22</td>
+                  <td>0</td>
                   
-                  <td>4</td>
+                  <td>0</td>
                   
-                  <td>11</td>
+                  <td>7</td>
                   
-                  <td>9</td>
+                  <td>0</td>
                   
-                  <td>13</td>
+                  <td>6</td>
                   
-                  <td>367</td>
+                  <td>3</td>
                   
-                  <td>59</td>
+                  <td>3</td>
                   
-                  <td>88705</td>
+                  <td>99</td>
+                  
+                  <td>58</td>
+                  
+                  <td>23310</td>
                   
                 </tr>
                 
@@ -3830,37 +7853,129 @@ display(features_df)
                   
                   <td>1</td>
                   
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>5</td>
+                  
+                  <td>35</td>
+                  
+                  <td>53</td>
+                  
+                  <td>14</td>
+                  
+                  <td>40</td>
+                  
+                  <td>960</td>
+                  
+                  <td>50</td>
+                  
+                  <td>240375</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>300027</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>26</td>
+                  
+                  <td>5</td>
+                  
+                  <td>27</td>
+                  
+                  <td>4</td>
+                  
+                  <td>7</td>
+                  
+                  <td>269</td>
+                  
+                  <td>55</td>
+                  
+                  <td>62460</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>143</td>
+                  
                   <td>0</td>
                   
                   <td>0</td>
                   
                   <td>1</td>
                   
-                  <td>27</td>
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>16</td>
+                  
+                  <td>22</td>
+                  
+                  <td>100</td>
+                  
+                  <td>45</td>
+                  
+                  <td>55</td>
+                  
+                  <td>2081</td>
+                  
+                  <td>108</td>
+                  
+                  <td>510014</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>100051</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
                   
                   <td>13</td>
                   
-                  <td>19</td>
+                  <td>2</td>
                   
-                  <td>9</td>
+                  <td>2</td>
                   
-                  <td>15</td>
+                  <td>1</td>
                   
-                  <td>417</td>
+                  <td>2</td>
                   
-                  <td>29</td>
+                  <td>69</td>
                   
-                  <td>101620</td>
+                  <td>0</td>
+                  
+                  <td>16450</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>25</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
+                  <td>32</td>
                   
                   <td>1</td>
                   
@@ -3868,63 +7983,31 @@ display(features_df)
                   
                   <td>1</td>
                   
-                  <td>27</td>
-                  
-                  <td>17</td>
-                  
-                  <td>98</td>
-                  
-                  <td>41</td>
-                  
-                  <td>61</td>
-                  
-                  <td>1880</td>
-                  
-                  <td>82</td>
-                  
-                  <td>467749</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>73</td>
-                  
-                  <td>1</td>
-                  
                   <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
                   
                   <td>1</td>
                   
                   <td>7</td>
                   
-                  <td>14</td>
+                  <td>1</td>
+                  
+                  <td>9</td>
+                  
+                  <td>1</td>
                   
                   <td>11</td>
                   
-                  <td>11</td>
+                  <td>201</td>
                   
-                  <td>377</td>
+                  <td>31</td>
                   
-                  <td>50</td>
-                  
-                  <td>93273</td>
+                  <td>48420</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>300009</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
+                  <td>100022</td>
                   
                   <td>0</td>
                   
@@ -3932,27 +8015,33 @@ display(features_df)
                   
                   <td>1</td>
                   
-                  <td>0</td>
+                  <td>2</td>
                   
-                  <td>15</td>
-                  
-                  <td>132</td>
-                  
-                  <td>21</td>
+                  <td>3</td>
                   
                   <td>44</td>
                   
-                  <td>1427</td>
+                  <td>18</td>
                   
-                  <td>101</td>
+                  <td>67</td>
                   
-                  <td>352776</td>
+                  <td>20</td>
+                  
+                  <td>51</td>
+                  
+                  <td>1833</td>
+                  
+                  <td>66</td>
+                  
+                  <td>448366</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>70</td>
+                  <td>100045</td>
+                  
+                  <td>1</td>
                   
                   <td>1</td>
                   
@@ -3960,69 +8049,61 @@ display(features_df)
                   
                   <td>0</td>
                   
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>3</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>65</td>
+                  
+                  <td>27</td>
+                  
+                  <td>16280</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>203</td>
+                  
                   <td>0</td>
                   
                   <td>1</td>
                   
-                  <td>4</td>
+                  <td>0</td>
                   
-                  <td>12</td>
+                  <td>1</td>
                   
-                  <td>90</td>
+                  <td>1</td>
                   
                   <td>26</td>
                   
-                  <td>41</td>
+                  <td>17</td>
                   
-                  <td>1490</td>
+                  <td>90</td>
                   
-                  <td>145</td>
+                  <td>39</td>
                   
-                  <td>366890</td>
+                  <td>49</td>
                   
-                </tr>
-                
-                <tr>
+                  <td>1682</td>
                   
-                  <td>121</td>
+                  <td>110</td>
                   
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>28</td>
-                  
-                  <td>8</td>
-                  
-                  <td>28</td>
-                  
-                  <td>20</td>
-                  
-                  <td>20</td>
-                  
-                  <td>726</td>
-                  
-                  <td>132</td>
-                  
-                  <td>175976</td>
+                  <td>424103</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>125</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
+                  <td>141</td>
                   
                   <td>0</td>
                   
@@ -4032,25 +8113,33 @@ display(features_df)
                   
                   <td>0</td>
                   
-                  <td>0</td>
+                  <td>1</td>
+                  
+                  <td>21</td>
                   
                   <td>0</td>
                   
-                  <td>0</td>
+                  <td>16</td>
                   
-                  <td>8</td>
+                  <td>4</td>
                   
-                  <td>72</td>
+                  <td>11</td>
                   
-                  <td>1774</td>
+                  <td>249</td>
+                  
+                  <td>88</td>
+                  
+                  <td>61174</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>156</td>
+                  <td>200</td>
                   
-                  <td>0</td>
+                  <td>1</td>
+                  
+                  <td>1</td>
                   
                   <td>1</td>
                   
@@ -4060,9 +8149,63 @@ display(features_df)
                   
                   <td>0</td>
                   
+                  <td>2</td>
+                  
+                  <td>10</td>
+                  
+                  <td>6</td>
+                  
+                  <td>5</td>
+                  
+                  <td>164</td>
+                  
+                  <td>7</td>
+                  
+                  <td>38062</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>56</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
                   <td>1</td>
                   
                   <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>6</td>
+                  
+                  <td>14</td>
+                  
+                  <td>81</td>
+                  
+                  <td>29</td>
+                  
+                  <td>65</td>
+                  
+                  <td>1679</td>
+                  
+                  <td>61</td>
+                  
+                  <td>416337</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>213</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
                   
                   <td>0</td>
                   
@@ -4072,15 +8215,153 @@ display(features_df)
                   
                   <td>3</td>
                   
-                  <td>0</td>
+                  <td>49</td>
                   
-                  <td>420</td>
+                  <td>17</td>
+                  
+                  <td>28</td>
+                  
+                  <td>861</td>
+                  
+                  <td>59</td>
+                  
+                  <td>232798</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>143</td>
+                  <td>100017</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>24</td>
+                  
+                  <td>3</td>
+                  
+                  <td>9</td>
+                  
+                  <td>3</td>
+                  
+                  <td>1</td>
+                  
+                  <td>127</td>
+                  
+                  <td>103</td>
+                  
+                  <td>32449</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>150</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>10</td>
+                  
+                  <td>1</td>
+                  
+                  <td>10</td>
+                  
+                  <td>2</td>
+                  
+                  <td>4</td>
+                  
+                  <td>155</td>
+                  
+                  <td>123</td>
+                  
+                  <td>44164</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>106</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>17</td>
+                  
+                  <td>15</td>
+                  
+                  <td>86</td>
+                  
+                  <td>38</td>
+                  
+                  <td>44</td>
+                  
+                  <td>1649</td>
+                  
+                  <td>64</td>
+                  
+                  <td>415610</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>147</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>31</td>
+                  
+                  <td>2</td>
+                  
+                  <td>12</td>
+                  
+                  <td>4</td>
+                  
+                  <td>8</td>
+                  
+                  <td>272</td>
+                  
+                  <td>68</td>
+                  
+                  <td>63554</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>200012</td>
+                  
+                  <td>0</td>
                   
                   <td>1</td>
                   
@@ -4092,341 +8373,211 @@ display(features_df)
                   
                   <td>0</td>
                   
-                  <td>15</td>
+                  <td>1</td>
+                  
+                  <td>1</td>
                   
                   <td>0</td>
                   
-                  <td>5</td>
+                  <td>3</td>
                   
-                  <td>6</td>
+                  <td>41</td>
+                  
+                  <td>63</td>
+                  
+                  <td>11053</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>270</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>10</td>
+                  
+                  <td>9</td>
+                  
+                  <td>48</td>
+                  
+                  <td>11</td>
+                  
+                  <td>25</td>
+                  
+                  <td>765</td>
+                  
+                  <td>78</td>
+                  
+                  <td>192780</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>42</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
                   
                   <td>2</td>
                   
                   <td>101</td>
                   
-                  <td>62</td>
+                  <td>41</td>
                   
-                  <td>24428</td>
+                  <td>187</td>
                   
-                </tr>
-                
-                <tr>
-                  
-                  <td>29</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>22</td>
-                  
-                  <td>22</td>
-                  
-                  <td>154</td>
-                  
-                  <td>47</td>
-                  
-                  <td>89</td>
-                  
-                  <td>3028</td>
-                  
-                  <td>60</td>
-                  
-                  <td>746144</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>21</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
-                  <td>27</td>
-                  
-                  <td>8</td>
-                  
-                  <td>9</td>
-                  
-                  <td>499</td>
-                  
-                  <td>69</td>
-                  
-                  <td>119943</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>98</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>30</td>
-                  
-                  <td>22</td>
-                  
-                  <td>115</td>
-                  
-                  <td>45</td>
-                  
-                  <td>58</td>
-                  
-                  <td>2401</td>
-                  
-                  <td>64</td>
-                  
-                  <td>622463</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>75</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>4</td>
-                  
-                  <td>48</td>
-                  
-                  <td>21</td>
-                  
-                  <td>27</td>
-                  
-                  <td>812</td>
-                  
-                  <td>69</td>
-                  
-                  <td>199848</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>100018</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
-                  <td>2</td>
-                  
-                  <td>80</td>
-                  
-                  <td>9</td>
-                  
-                  <td>46</td>
-                  
-                  <td>23</td>
-                  
-                  <td>31</td>
-                  
-                  <td>1002</td>
+                  <td>71</td>
                   
                   <td>111</td>
                   
-                  <td>243416</td>
+                  <td>4070</td>
+                  
+                  <td>67</td>
+                  
+                  <td>1077242</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>145</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>8</td>
-                  
-                  <td>61</td>
-                  
-                  <td>34</td>
-                  
-                  <td>27</td>
-                  
-                  <td>1129</td>
-                  
-                  <td>102</td>
-                  
-                  <td>284321</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>109</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
+                  <td>79</td>
                   
                   <td>0</td>
                   
                   <td>1</td>
                   
-                  <td>1</td>
-                  
-                  <td>7</td>
-                  
-                  <td>5</td>
-                  
-                  <td>23</td>
-                  
-                  <td>12</td>
-                  
-                  <td>16</td>
-                  
-                  <td>717</td>
-                  
-                  <td>88</td>
-                  
-                  <td>177363</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>100009</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>42</td>
-                  
-                  <td>8</td>
-                  
-                  <td>23</td>
-                  
-                  <td>7</td>
-                  
-                  <td>12</td>
-                  
-                  <td>518</td>
-                  
-                  <td>38</td>
-                  
-                  <td>127177</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300005</td>
-                  
                   <td>0</td>
                   
                   <td>0</td>
                   
                   <td>0</td>
                   
-                  <td>0</td>
+                  <td>17</td>
                   
                   <td>1</td>
-                  
-                  <td>2</td>
-                  
-                  <td>4</td>
-                  
-                  <td>35</td>
-                  
-                  <td>8</td>
                   
                   <td>9</td>
                   
-                  <td>312</td>
+                  <td>6</td>
                   
-                  <td>157</td>
+                  <td>8</td>
                   
-                  <td>76230</td>
+                  <td>213</td>
+                  
+                  <td>68</td>
+                  
+                  <td>52760</td>
                   
                 </tr>
                 
                 <tr>
                   
-                  <td>105</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
+                  <td>100026</td>
                   
                   <td>0</td>
                   
-                  <td>0</td>
+                  <td>1</td>
                   
                   <td>1</td>
                   
                   <td>2</td>
                   
-                  <td>6</td>
-                  
-                  <td>45</td>
+                  <td>2</td>
                   
                   <td>13</td>
                   
-                  <td>12</td>
+                  <td>1</td>
                   
-                  <td>764</td>
+                  <td>22</td>
                   
-                  <td>29</td>
+                  <td>9</td>
                   
-                  <td>195421</td>
+                  <td>9</td>
+                  
+                  <td>406</td>
+                  
+                  <td>232</td>
+                  
+                  <td>96001</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>30</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>37</td>
+                  
+                  <td>37</td>
+                  
+                  <td>177</td>
+                  
+                  <td>69</td>
+                  
+                  <td>103</td>
+                  
+                  <td>3988</td>
+                  
+                  <td>63</td>
+                  
+                  <td>984086</td>
+                  
+                </tr>
+                
+                <tr>
+                  
+                  <td>66</td>
+                  
+                  <td>0</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>0</td>
+                  
+                  <td>1</td>
+                  
+                  <td>5</td>
+                  
+                  <td>15</td>
+                  
+                  <td>87</td>
+                  
+                  <td>24</td>
+                  
+                  <td>43</td>
+                  
+                  <td>1804</td>
+                  
+                  <td>126</td>
+                  
+                  <td>448107</td>
                   
                 </tr>
                 
@@ -4440,7 +8591,7 @@ display(features_df)
   
   <script class="pd_save">
     $(function() {
-      var tableWrapper = $('.df-table-wrapper-63eeabe3');
+      var tableWrapper = $('.df-table-wrapper-9c339a58');
       var fixedHeader = $('.fixed-header', tableWrapper);
       var tableContainer = $('.df-table-container', tableWrapper);
       var table = $('.df-table', tableContainer);
@@ -4451,7 +8602,7 @@ display(features_df)
         .css('width', table.width())
         .find('.fixed-cell')
         .each(function(i, e) {
-          $(this).css('width', $('.df-table-wrapper-63eeabe3 th:nth-child(' + (i+1) + ')').css('width'));
+          $(this).css('width', $('.df-table-wrapper-9c339a58 th:nth-child(' + (i+1) + ')').css('width'));
         });
   
       tableContainer.scroll(function() {
@@ -4498,9 +8649,96 @@ display(features_df)
         </div>
 
 
-# +++ END TMP
 
-# Feature selection
+```python
+# Convert features_df to Pandas for further exploration
+pd_features_df = features_df.toPandas()
+```
+
+### Pairplot of features
+
+
+```python
+# split features into two subsets to create a manageable pairplot
+features_wo_id_label = pd_features_df.columns.values.tolist()[2:]
+first_features_df = pd_features_df[features_wo_id_label[-6:]]
+first_features_df["label"] = pd_features_df["label"]
+second_features_df = pd_features_df[features_wo_id_label[:6]]
+second_features_df["label"] = pd_features_df["label"]
+```
+
+    /opt/ibm/conda/miniconda3.6/lib/python3.6/site-packages/ipykernel/__main__.py:4: SettingWithCopyWarning: 
+    A value is trying to be set on a copy of a slice from a DataFrame.
+    Try using .loc[row_indexer,col_indexer] = value instead
+    
+    See the caveats in the documentation: http://pandas.pydata.org/pandas-docs/stable/indexing.html#indexing-view-versus-copy
+    /opt/ibm/conda/miniconda3.6/lib/python3.6/site-packages/ipykernel/__main__.py:6: SettingWithCopyWarning: 
+    A value is trying to be set on a copy of a slice from a DataFrame.
+    Try using .loc[row_indexer,col_indexer] = value instead
+    
+    See the caveats in the documentation: http://pandas.pydata.org/pandas-docs/stable/indexing.html#indexing-view-versus-copy
+
+
+
+```python
+# show relationship between variables for all features
+plt.figure(figsize=(25, 25))
+sns.pairplot(first_features_df, hue="label");
+```
+
+    /opt/ibm/conda/miniconda3.6/lib/python3.6/site-packages/statsmodels/nonparametric/kde.py:488: RuntimeWarning: invalid value encountered in true_divide
+      binned = fast_linbin(X, a, b, gridsize) / (delta * nobs)
+    /opt/ibm/conda/miniconda3.6/lib/python3.6/site-packages/statsmodels/nonparametric/kdetools.py:34: RuntimeWarning: invalid value encountered in double_scalars
+      FAC1 = 2*(np.pi*bw/RANGE)**2
+    /opt/ibm/conda/miniconda3.6/lib/python3.6/site-packages/numpy/core/fromnumeric.py:83: RuntimeWarning: invalid value encountered in reduce
+      return ufunc.reduce(obj, axis, dtype, out, **passkwargs)
+
+
+
+    <Figure size 1800x1800 with 0 Axes>
+
+
+
+![png](output_41_2.png)
+
+
+
+```python
+# show relationship between variables for all features
+plt.figure(figsize=(25, 25))
+sns.pairplot(second_features_df, hue="label");
+```
+
+    /opt/ibm/conda/miniconda3.6/lib/python3.6/site-packages/statsmodels/nonparametric/kde.py:488: RuntimeWarning: invalid value encountered in true_divide
+      binned = fast_linbin(X, a, b, gridsize) / (delta * nobs)
+    /opt/ibm/conda/miniconda3.6/lib/python3.6/site-packages/statsmodels/nonparametric/kdetools.py:34: RuntimeWarning: invalid value encountered in double_scalars
+      FAC1 = 2*(np.pi*bw/RANGE)**2
+    /opt/ibm/conda/miniconda3.6/lib/python3.6/site-packages/numpy/core/fromnumeric.py:83: RuntimeWarning: invalid value encountered in reduce
+      return ufunc.reduce(obj, axis, dtype, out, **passkwargs)
+
+
+
+    <Figure size 1800x1800 with 0 Axes>
+
+
+
+![png](output_42_2.png)
+
+
+## Heat map on feature and label correlation
+
+
+```python
+# print correlation between variables
+corr = pd_features_df.drop("userId", axis=1).corr()
+sns.heatmap(corr, xticklabels=corr.columns, yticklabels=corr.columns, cmap=sns.diverging_palette(220, 10, as_cmap=True));
+```
+
+
+![png](output_44_0.png)
+
+
+# Feature Selection
 
 ## Feature scaling and vectorization
 
@@ -4522,10 +8760,7 @@ nonbinary_feature_list = [
  'song_count',
  'days_since_reg',
  'total_session_time_sec']
-```
 
-
-```python
 convert_vector_to_double = F.udf(lambda vector_value: round(float(list(vector_value)[0]),3), DoubleType())
 
 for column in nonbinary_feature_list:
@@ -4535,7 +8770,7 @@ for column in nonbinary_feature_list:
     scaler = MinMaxScaler(inputCol=column+"_vect", outputCol=column+"_scaled")
     # create Pipeline with assembler and scaler
     pipeline = Pipeline(stages=[assembler, scaler])
-    # apply pipelien on features_df Dataframe
+    # apply pipeline on features_df Dataframe
     features_df = pipeline.fit(features_df).transform(features_df) \
     .withColumn(column+"_scaled", convert_vector_to_double(column+"_scaled")).drop(column+"_vect")
 ```
@@ -4554,5841 +8789,27 @@ assembler = VectorAssembler(inputCols=feature_list, outputCol="features")
 features_df = assembler.transform(features_df)
 ```
 
-
-```python
-display(features_df)
-```
-
-
-<style type="text/css">.pd_warning{display:none;}</style><div class="pd_warning"><em>Hey, there's something awesome here! To see it, open this notebook outside GitHub, in a viewer like Jupyter</em></div>
-        <div class="pd_save is-viewer-good" style="padding-right:10px;text-align: center;line-height:initial !important;font-size: xx-large;font-weight: 500;color: coral;">
-            
-        </div>
-    <div id="chartFigure969bf51c" class="pd_save is-viewer-good" style="overflow-x:auto">
-            <style type="text/css" class="pd_save">
-    .df-table-wrapper .panel-heading {
-      border-radius: 0;
-      padding: 0px;
-    }
-    .df-table-wrapper .panel-heading:hover {
-      border-color: #008571;
-    }
-    .df-table-wrapper .panel-title a {
-      background-color: #f9f9fb;
-      color: #333333;
-      display: block;
-      outline: none;
-      padding: 10px 15px;
-      text-decoration: none;
-    }
-    .df-table-wrapper .panel-title a:hover {
-      background-color: #337ab7;
-      border-color: #2e6da4;
-      color: #ffffff;
-      display: block;
-      padding: 10px 15px;
-      text-decoration: none;
-    }
-    .df-table-wrapper {
-      font-size: small;
-      font-weight: 300;
-      letter-spacing: 0.5px;
-      line-height: normal;
-      height: inherit;
-      overflow: auto;
-    }
-    .df-table-search {
-      margin: 0 0 20px 0;
-    }
-    .df-table-search-count {
-      display: inline-block;
-      margin: 0 0 20px 0;
-    }
-    .df-table-container {
-      max-height: 50vh;
-      max-width: 100%;
-      overflow-x: auto;
-      position: relative;
-    }
-    .df-table-wrapper table {
-      border: 0 none #ffffff;
-      border-collapse: collapse;
-      margin: 0;
-      min-width: 100%;
-      padding: 0;
-      table-layout: fixed;
-      height: inherit;
-      overflow: auto;
-    }
-    .df-table-wrapper tr.hidden {
-      display: none;
-    }
-    .df-table-wrapper tr:nth-child(even) {
-      background-color: #f9f9fb;
-    }
-    .df-table-wrapper tr.even {
-      background-color: #f9f9fb;
-    }
-    .df-table-wrapper tr.odd {
-      background-color: #ffffff;
-    }
-    .df-table-wrapper td + td {
-      border-left: 1px solid #e0e0e0;
-    }
-  
-    .df-table-wrapper thead,
-    .fixed-header {
-      font-weight: 600;
-    }
-    .df-table-wrapper tr,
-    .fixed-row {
-      border: 0 none #ffffff;
-      margin: 0;
-      padding: 0;
-    }
-    .df-table-wrapper th,
-    .df-table-wrapper td,
-    .fixed-cell {
-      border: 0 none #ffffff;
-      margin: 0;
-      min-width: 50px;
-      padding: 5px 20px 5px 10px;
-      text-align: left;
-      word-wrap: break-word;
-    }
-    .df-table-wrapper th {
-      padding-bottom: 0;
-      padding-top: 0;
-    }
-    .df-table-wrapper th div {
-      max-height: 1px;
-      visibility: hidden;
-    }
-  
-    .df-schema-field {
-      margin-left: 10px;
-    }
-  
-    .fixed-header-container {
-      overflow: hidden;
-      position: relative;
-    }
-    .fixed-header {
-      border-bottom: 2px solid #000;
-      display: table;
-      position: relative;
-    }
-    .fixed-row {
-      display: table-row;
-    }
-    .fixed-cell {
-      display: table-cell;
-    }
-  </style>
-  
-  
-  <div class="df-table-wrapper df-table-wrapper-969bf51c panel-group pd_save">
-    <!-- dataframe schema -->
-    
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <h4 class="panel-title" style="margin: 0px;">
-          <a data-toggle="collapse" href="#df-schema-969bf51c" data-parent="#df-table-wrapper-969bf51c">Schema</a>
-        </h4>
-      </div>
-      <div id="df-schema-969bf51c" class="panel-collapse collapse">
-        <div class="panel-body" style="font-family: monospace;">
-          <div class="df-schema-fields">
-            <div>Field types:</div>
-            
-              <div class="df-schema-field"><strong>userId: </strong> int32</div>
-            
-              <div class="df-schema-field"><strong>label: </strong> int32</div>
-            
-              <div class="df-schema-field"><strong>gender_bin: </strong> int32</div>
-            
-              <div class="df-schema-field"><strong>level_bin: </strong> int32</div>
-            
-              <div class="df-schema-field"><strong>sum(downgraded): </strong> int64</div>
-            
-              <div class="df-schema-field"><strong>sum(upgraded): </strong> int64</div>
-            
-              <div class="df-schema-field"><strong>sum(advert_shown): </strong> int64</div>
-            
-              <div class="df-schema-field"><strong>sum(thumps_down): </strong> int64</div>
-            
-              <div class="df-schema-field"><strong>sum(thumps_up): </strong> int64</div>
-            
-              <div class="df-schema-field"><strong>sum(friend_added): </strong> int64</div>
-            
-              <div class="df-schema-field"><strong>sum(song_added): </strong> int64</div>
-            
-              <div class="df-schema-field"><strong>song_count: </strong> int64</div>
-            
-              <div class="df-schema-field"><strong>days_since_reg: </strong> int32</div>
-            
-              <div class="df-schema-field"><strong>total_session_time_sec: </strong> int64</div>
-            
-              <div class="df-schema-field"><strong>sum(downgraded)_scaled: </strong> float64</div>
-            
-              <div class="df-schema-field"><strong>sum(upgraded)_scaled: </strong> float64</div>
-            
-              <div class="df-schema-field"><strong>sum(advert_shown)_scaled: </strong> float64</div>
-            
-              <div class="df-schema-field"><strong>sum(thumps_down)_scaled: </strong> float64</div>
-            
-              <div class="df-schema-field"><strong>sum(thumps_up)_scaled: </strong> float64</div>
-            
-              <div class="df-schema-field"><strong>sum(friend_added)_scaled: </strong> float64</div>
-            
-              <div class="df-schema-field"><strong>sum(song_added)_scaled: </strong> float64</div>
-            
-              <div class="df-schema-field"><strong>song_count_scaled: </strong> float64</div>
-            
-              <div class="df-schema-field"><strong>days_since_reg_scaled: </strong> float64</div>
-            
-              <div class="df-schema-field"><strong>total_session_time_sec_scaled: </strong> float64</div>
-            
-              <div class="df-schema-field"><strong>features: </strong> object</div>
-            
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- dataframe table -->
-    <div class="panel panel-default">
-      
-      <div class="panel-heading">
-        <h4 class="panel-title" style="margin: 0px;">
-          <a data-toggle="collapse" href="#df-table-969bf51c" data-parent="#df-table-wrapper-969bf51c"> Table</a>
-        </h4>
-      </div>
-      
-      <div id="df-table-969bf51c" class="panel-collapse collapse in">
-        <div class="panel-body">
-          
-          <input type="text" class="df-table-search form-control input-sm" placeholder="Search table">
-          
-          <div>
-            
-            <span class="df-table-search-count">Showing 100 of 225 rows</span>
-            
-          </div>
-          <!-- fixed header for when dataframe table scrolls -->
-          <div class="fixed-header-container">
-            <div class="fixed-header">
-              <div class="fixed-row">
-                
-                <div class="fixed-cell">userId</div>
-                
-                <div class="fixed-cell">label</div>
-                
-                <div class="fixed-cell">gender_bin</div>
-                
-                <div class="fixed-cell">level_bin</div>
-                
-                <div class="fixed-cell">sum(downgraded)</div>
-                
-                <div class="fixed-cell">sum(upgraded)</div>
-                
-                <div class="fixed-cell">sum(advert_shown)</div>
-                
-                <div class="fixed-cell">sum(thumps_down)</div>
-                
-                <div class="fixed-cell">sum(thumps_up)</div>
-                
-                <div class="fixed-cell">sum(friend_added)</div>
-                
-                <div class="fixed-cell">sum(song_added)</div>
-                
-                <div class="fixed-cell">song_count</div>
-                
-                <div class="fixed-cell">days_since_reg</div>
-                
-                <div class="fixed-cell">total_session_time_sec</div>
-                
-                <div class="fixed-cell">sum(downgraded)_scaled</div>
-                
-                <div class="fixed-cell">sum(upgraded)_scaled</div>
-                
-                <div class="fixed-cell">sum(advert_shown)_scaled</div>
-                
-                <div class="fixed-cell">sum(thumps_down)_scaled</div>
-                
-                <div class="fixed-cell">sum(thumps_up)_scaled</div>
-                
-                <div class="fixed-cell">sum(friend_added)_scaled</div>
-                
-                <div class="fixed-cell">sum(song_added)_scaled</div>
-                
-                <div class="fixed-cell">song_count_scaled</div>
-                
-                <div class="fixed-cell">days_since_reg_scaled</div>
-                
-                <div class="fixed-cell">total_session_time_sec_scaled</div>
-                
-                <div class="fixed-cell">features</div>
-                
-              </div>
-            </div>
-          </div>
-          <div class="df-table-container">
-            <table class="df-table">
-              <thead>
-                <tr>
-                  
-                  <th><div>userId</div></th>
-                  
-                  <th><div>label</div></th>
-                  
-                  <th><div>gender_bin</div></th>
-                  
-                  <th><div>level_bin</div></th>
-                  
-                  <th><div>sum(downgraded)</div></th>
-                  
-                  <th><div>sum(upgraded)</div></th>
-                  
-                  <th><div>sum(advert_shown)</div></th>
-                  
-                  <th><div>sum(thumps_down)</div></th>
-                  
-                  <th><div>sum(thumps_up)</div></th>
-                  
-                  <th><div>sum(friend_added)</div></th>
-                  
-                  <th><div>sum(song_added)</div></th>
-                  
-                  <th><div>song_count</div></th>
-                  
-                  <th><div>days_since_reg</div></th>
-                  
-                  <th><div>total_session_time_sec</div></th>
-                  
-                  <th><div>sum(downgraded)_scaled</div></th>
-                  
-                  <th><div>sum(upgraded)_scaled</div></th>
-                  
-                  <th><div>sum(advert_shown)_scaled</div></th>
-                  
-                  <th><div>sum(thumps_down)_scaled</div></th>
-                  
-                  <th><div>sum(thumps_up)_scaled</div></th>
-                  
-                  <th><div>sum(friend_added)_scaled</div></th>
-                  
-                  <th><div>sum(song_added)_scaled</div></th>
-                  
-                  <th><div>song_count_scaled</div></th>
-                  
-                  <th><div>days_since_reg_scaled</div></th>
-                  
-                  <th><div>total_session_time_sec_scaled</div></th>
-                  
-                  <th><div>features</div></th>
-                  
-                </tr>
-              </thead>
-              <tbody>
-                
-                <tr>
-                  
-                  <td>85</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
-                  <td>3</td>
-                  
-                  <td>33</td>
-                  
-                  <td>38</td>
-                  
-                  <td>192</td>
-                  
-                  <td>58</td>
-                  
-                  <td>108</td>
-                  
-                  <td>3616</td>
-                  
-                  <td>109</td>
-                  
-                  <td>912282</td>
-                  
-                  <td>0.667</td>
-                  
-                  <td>0.75</td>
-                  
-                  <td>0.258</td>
-                  
-                  <td>0.507</td>
-                  
-                  <td>0.439</td>
-                  
-                  <td>0.406</td>
-                  
-                  <td>0.45</td>
-                  
-                  <td>0.452</td>
-                  
-                  <td>0.426</td>
-                  
-                  <td>0.463</td>
-                  
-                  <td>[1.0,0.0,0.667,0.75,0.258,0.507,0.439,0.406,0.45,0.452,0.426,0.463]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>137</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>10</td>
-                  
-                  <td>1</td>
-                  
-                  <td>8</td>
-                  
-                  <td>8</td>
-                  
-                  <td>4</td>
-                  
-                  <td>154</td>
-                  
-                  <td>124</td>
-                  
-                  <td>38027</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.078</td>
-                  
-                  <td>0.013</td>
-                  
-                  <td>0.018</td>
-                  
-                  <td>0.056</td>
-                  
-                  <td>0.017</td>
-                  
-                  <td>0.019</td>
-                  
-                  <td>0.484</td>
-                  
-                  <td>0.019</td>
-                  
-                  <td>[1.0,0.0,0.0,0.25,0.078,0.013,0.018,0.056,0.017,0.019,0.484,0.019]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>65</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>8</td>
-                  
-                  <td>17</td>
-                  
-                  <td>111</td>
-                  
-                  <td>53</td>
-                  
-                  <td>68</td>
-                  
-                  <td>2113</td>
-                  
-                  <td>71</td>
-                  
-                  <td>530161</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.062</td>
-                  
-                  <td>0.227</td>
-                  
-                  <td>0.254</td>
-                  
-                  <td>0.371</td>
-                  
-                  <td>0.283</td>
-                  
-                  <td>0.264</td>
-                  
-                  <td>0.277</td>
-                  
-                  <td>0.269</td>
-                  
-                  <td>[1.0,0.0,0.0,0.25,0.062,0.227,0.254,0.371,0.283,0.264,0.277,0.269]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>53</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>25</td>
-                  
-                  <td>16</td>
-                  
-                  <td>69</td>
-                  
-                  <td>25</td>
-                  
-                  <td>46</td>
-                  
-                  <td>1746</td>
-                  
-                  <td>53</td>
-                  
-                  <td>424898</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.195</td>
-                  
-                  <td>0.213</td>
-                  
-                  <td>0.158</td>
-                  
-                  <td>0.175</td>
-                  
-                  <td>0.192</td>
-                  
-                  <td>0.218</td>
-                  
-                  <td>0.207</td>
-                  
-                  <td>0.216</td>
-                  
-                  <td>[1.0,0.0,0.0,0.25,0.195,0.213,0.158,0.175,0.192,0.218,0.207,0.216]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>100007</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>5</td>
-                  
-                  <td>6</td>
-                  
-                  <td>19</td>
-                  
-                  <td>17</td>
-                  
-                  <td>9</td>
-                  
-                  <td>423</td>
-                  
-                  <td>115</td>
-                  
-                  <td>102282</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.039</td>
-                  
-                  <td>0.08</td>
-                  
-                  <td>0.043</td>
-                  
-                  <td>0.119</td>
-                  
-                  <td>0.037</td>
-                  
-                  <td>0.053</td>
-                  
-                  <td>0.449</td>
-                  
-                  <td>0.052</td>
-                  
-                  <td>[0.0,1.0,0.0,0.0,0.039,0.08,0.043,0.119,0.037,0.053,0.449,0.052]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>34</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>3</td>
-                  
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
-                  <td>0</td>
-                  
-                  <td>4</td>
-                  
-                  <td>53</td>
-                  
-                  <td>71</td>
-                  
-                  <td>12316</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.023</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.005</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.017</td>
-                  
-                  <td>0.006</td>
-                  
-                  <td>0.277</td>
-                  
-                  <td>0.006</td>
-                  
-                  <td>[1.0,0.0,0.0,0.0,0.023,0.0,0.005,0.0,0.017,0.006,0.277,0.006]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>115</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>11</td>
-                  
-                  <td>24</td>
-                  
-                  <td>92</td>
-                  
-                  <td>39</td>
-                  
-                  <td>42</td>
-                  
-                  <td>1737</td>
-                  
-                  <td>75</td>
-                  
-                  <td>428228</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.086</td>
-                  
-                  <td>0.32</td>
-                  
-                  <td>0.211</td>
-                  
-                  <td>0.273</td>
-                  
-                  <td>0.175</td>
-                  
-                  <td>0.217</td>
-                  
-                  <td>0.293</td>
-                  
-                  <td>0.217</td>
-                  
-                  <td>[0.0,0.0,0.0,0.25,0.086,0.32,0.211,0.273,0.175,0.217,0.293,0.217]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>100005</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>18</td>
-                  
-                  <td>3</td>
-                  
-                  <td>7</td>
-                  
-                  <td>3</td>
-                  
-                  <td>3</td>
-                  
-                  <td>154</td>
-                  
-                  <td>85</td>
-                  
-                  <td>36056</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.141</td>
-                  
-                  <td>0.04</td>
-                  
-                  <td>0.016</td>
-                  
-                  <td>0.021</td>
-                  
-                  <td>0.013</td>
-                  
-                  <td>0.019</td>
-                  
-                  <td>0.332</td>
-                  
-                  <td>0.018</td>
-                  
-                  <td>[1.0,0.0,0.0,0.0,0.141,0.04,0.016,0.021,0.013,0.019,0.332,0.018]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300010</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>25</td>
-                  
-                  <td>1</td>
-                  
-                  <td>21</td>
-                  
-                  <td>8</td>
-                  
-                  <td>7</td>
-                  
-                  <td>263</td>
-                  
-                  <td>74</td>
-                  
-                  <td>65280</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.195</td>
-                  
-                  <td>0.013</td>
-                  
-                  <td>0.048</td>
-                  
-                  <td>0.056</td>
-                  
-                  <td>0.029</td>
-                  
-                  <td>0.033</td>
-                  
-                  <td>0.289</td>
-                  
-                  <td>0.033</td>
-                  
-                  <td>[1.0,0.0,0.0,0.0,0.195,0.013,0.048,0.056,0.029,0.033,0.289,0.033]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300017</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>11</td>
-                  
-                  <td>28</td>
-                  
-                  <td>303</td>
-                  
-                  <td>63</td>
-                  
-                  <td>113</td>
-                  
-                  <td>3632</td>
-                  
-                  <td>74</td>
-                  
-                  <td>881965</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.086</td>
-                  
-                  <td>0.373</td>
-                  
-                  <td>0.693</td>
-                  
-                  <td>0.441</td>
-                  
-                  <td>0.471</td>
-                  
-                  <td>0.454</td>
-                  
-                  <td>0.289</td>
-                  
-                  <td>0.448</td>
-                  
-                  <td>[0.0,1.0,0.0,0.0,0.086,0.373,0.693,0.441,0.471,0.454,0.289,0.448]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>44</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
-                  <td>25</td>
-                  
-                  <td>8</td>
-                  
-                  <td>10</td>
-                  
-                  <td>429</td>
-                  
-                  <td>37</td>
-                  
-                  <td>105541</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.027</td>
-                  
-                  <td>0.057</td>
-                  
-                  <td>0.056</td>
-                  
-                  <td>0.042</td>
-                  
-                  <td>0.053</td>
-                  
-                  <td>0.145</td>
-                  
-                  <td>0.053</td>
-                  
-                  <td>[0.0,0.0,0.0,0.25,0.0,0.027,0.057,0.056,0.042,0.053,0.145,0.053]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>103</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>2</td>
-                  
-                  <td>14</td>
-                  
-                  <td>9</td>
-                  
-                  <td>52</td>
-                  
-                  <td>25</td>
-                  
-                  <td>42</td>
-                  
-                  <td>1073</td>
-                  
-                  <td>42</td>
-                  
-                  <td>265103</td>
-                  
-                  <td>0.333</td>
-                  
-                  <td>0.5</td>
-                  
-                  <td>0.109</td>
-                  
-                  <td>0.12</td>
-                  
-                  <td>0.119</td>
-                  
-                  <td>0.175</td>
-                  
-                  <td>0.175</td>
-                  
-                  <td>0.134</td>
-                  
-                  <td>0.164</td>
-                  
-                  <td>0.134</td>
-                  
-                  <td>[0.0,0.0,0.333,0.5,0.109,0.12,0.119,0.175,0.175,0.134,0.164,0.134]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>200019</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>10</td>
-                  
-                  <td>17</td>
-                  
-                  <td>28</td>
-                  
-                  <td>8</td>
-                  
-                  <td>18</td>
-                  
-                  <td>495</td>
-                  
-                  <td>56</td>
-                  
-                  <td>119002</td>
-                  
-                  <td>0.333</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.078</td>
-                  
-                  <td>0.227</td>
-                  
-                  <td>0.064</td>
-                  
-                  <td>0.056</td>
-                  
-                  <td>0.075</td>
-                  
-                  <td>0.062</td>
-                  
-                  <td>0.219</td>
-                  
-                  <td>0.06</td>
-                  
-                  <td>[1.0,0.0,0.333,0.25,0.078,0.227,0.064,0.056,0.075,0.062,0.219,0.06]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300006</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>14</td>
-                  
-                  <td>3</td>
-                  
-                  <td>23</td>
-                  
-                  <td>17</td>
-                  
-                  <td>7</td>
-                  
-                  <td>279</td>
-                  
-                  <td>89</td>
-                  
-                  <td>65964</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.109</td>
-                  
-                  <td>0.04</td>
-                  
-                  <td>0.053</td>
-                  
-                  <td>0.119</td>
-                  
-                  <td>0.029</td>
-                  
-                  <td>0.035</td>
-                  
-                  <td>0.348</td>
-                  
-                  <td>0.033</td>
-                  
-                  <td>[1.0,0.0,0.0,0.25,0.109,0.04,0.053,0.119,0.029,0.035,0.348,0.033]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>100016</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>16</td>
-                  
-                  <td>5</td>
-                  
-                  <td>25</td>
-                  
-                  <td>13</td>
-                  
-                  <td>6</td>
-                  
-                  <td>530</td>
-                  
-                  <td>75</td>
-                  
-                  <td>127394</td>
-                  
-                  <td>0.333</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.125</td>
-                  
-                  <td>0.067</td>
-                  
-                  <td>0.057</td>
-                  
-                  <td>0.091</td>
-                  
-                  <td>0.025</td>
-                  
-                  <td>0.066</td>
-                  
-                  <td>0.293</td>
-                  
-                  <td>0.065</td>
-                  
-                  <td>[1.0,1.0,0.333,0.0,0.125,0.067,0.057,0.091,0.025,0.066,0.293,0.065]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>100001</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>14</td>
-                  
-                  <td>2</td>
-                  
-                  <td>8</td>
-                  
-                  <td>2</td>
-                  
-                  <td>3</td>
-                  
-                  <td>133</td>
-                  
-                  <td>45</td>
-                  
-                  <td>35558</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.109</td>
-                  
-                  <td>0.027</td>
-                  
-                  <td>0.018</td>
-                  
-                  <td>0.014</td>
-                  
-                  <td>0.013</td>
-                  
-                  <td>0.016</td>
-                  
-                  <td>0.176</td>
-                  
-                  <td>0.018</td>
-                  
-                  <td>[0.0,0.0,0.0,0.0,0.109,0.027,0.018,0.014,0.013,0.016,0.176,0.018]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>22</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>4</td>
-                  
-                  <td>0</td>
-                  
-                  <td>3</td>
-                  
-                  <td>3</td>
-                  
-                  <td>0</td>
-                  
-                  <td>28</td>
-                  
-                  <td>61</td>
-                  
-                  <td>6398</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.031</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.007</td>
-                  
-                  <td>0.021</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.003</td>
-                  
-                  <td>0.238</td>
-                  
-                  <td>0.003</td>
-                  
-                  <td>(12,[4,6,7,9,10,11],[0.031,0.007,0.021,0.003,0.238,0.003])</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>128</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>11</td>
-                  
-                  <td>18</td>
-                  
-                  <td>87</td>
-                  
-                  <td>28</td>
-                  
-                  <td>53</td>
-                  
-                  <td>1728</td>
-                  
-                  <td>95</td>
-                  
-                  <td>424958</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.086</td>
-                  
-                  <td>0.24</td>
-                  
-                  <td>0.199</td>
-                  
-                  <td>0.196</td>
-                  
-                  <td>0.221</td>
-                  
-                  <td>0.216</td>
-                  
-                  <td>0.371</td>
-                  
-                  <td>0.216</td>
-                  
-                  <td>[1.0,0.0,0.0,0.25,0.086,0.24,0.199,0.196,0.221,0.216,0.371,0.216]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>93</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>43</td>
-                  
-                  <td>4</td>
-                  
-                  <td>35</td>
-                  
-                  <td>13</td>
-                  
-                  <td>17</td>
-                  
-                  <td>640</td>
-                  
-                  <td>71</td>
-                  
-                  <td>155952</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.336</td>
-                  
-                  <td>0.053</td>
-                  
-                  <td>0.08</td>
-                  
-                  <td>0.091</td>
-                  
-                  <td>0.071</td>
-                  
-                  <td>0.08</td>
-                  
-                  <td>0.277</td>
-                  
-                  <td>0.079</td>
-                  
-                  <td>[1.0,0.0,0.0,0.25,0.336,0.053,0.08,0.091,0.071,0.08,0.277,0.079]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300002</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>2</td>
-                  
-                  <td>4</td>
-                  
-                  <td>11</td>
-                  
-                  <td>140</td>
-                  
-                  <td>28</td>
-                  
-                  <td>57</td>
-                  
-                  <td>1610</td>
-                  
-                  <td>124</td>
-                  
-                  <td>402651</td>
-                  
-                  <td>0.333</td>
-                  
-                  <td>0.5</td>
-                  
-                  <td>0.031</td>
-                  
-                  <td>0.147</td>
-                  
-                  <td>0.32</td>
-                  
-                  <td>0.196</td>
-                  
-                  <td>0.237</td>
-                  
-                  <td>0.201</td>
-                  
-                  <td>0.484</td>
-                  
-                  <td>0.204</td>
-                  
-                  <td>[0.0,0.0,0.333,0.5,0.031,0.147,0.32,0.196,0.237,0.201,0.484,0.204]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300004</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>10</td>
-                  
-                  <td>2</td>
-                  
-                  <td>17</td>
-                  
-                  <td>2</td>
-                  
-                  <td>3</td>
-                  
-                  <td>204</td>
-                  
-                  <td>89</td>
-                  
-                  <td>50062</td>
-                  
-                  <td>0.333</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.078</td>
-                  
-                  <td>0.027</td>
-                  
-                  <td>0.039</td>
-                  
-                  <td>0.014</td>
-                  
-                  <td>0.013</td>
-                  
-                  <td>0.025</td>
-                  
-                  <td>0.348</td>
-                  
-                  <td>0.025</td>
-                  
-                  <td>[0.0,0.0,0.333,0.25,0.078,0.027,0.039,0.014,0.013,0.025,0.348,0.025]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>111</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>3</td>
-                  
-                  <td>6</td>
-                  
-                  <td>34</td>
-                  
-                  <td>23</td>
-                  
-                  <td>21</td>
-                  
-                  <td>698</td>
-                  
-                  <td>82</td>
-                  
-                  <td>194266</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.023</td>
-                  
-                  <td>0.08</td>
-                  
-                  <td>0.078</td>
-                  
-                  <td>0.161</td>
-                  
-                  <td>0.087</td>
-                  
-                  <td>0.087</td>
-                  
-                  <td>0.32</td>
-                  
-                  <td>0.098</td>
-                  
-                  <td>[0.0,0.0,0.0,0.25,0.023,0.08,0.078,0.161,0.087,0.087,0.32,0.098]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>100025</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>30</td>
-                  
-                  <td>7</td>
-                  
-                  <td>20</td>
-                  
-                  <td>3</td>
-                  
-                  <td>9</td>
-                  
-                  <td>490</td>
-                  
-                  <td>89</td>
-                  
-                  <td>130869</td>
-                  
-                  <td>0.333</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.234</td>
-                  
-                  <td>0.093</td>
-                  
-                  <td>0.046</td>
-                  
-                  <td>0.021</td>
-                  
-                  <td>0.037</td>
-                  
-                  <td>0.061</td>
-                  
-                  <td>0.348</td>
-                  
-                  <td>0.066</td>
-                  
-                  <td>[0.0,1.0,0.333,0.0,0.234,0.093,0.046,0.021,0.037,0.061,0.348,0.066]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>100024</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>3</td>
-                  
-                  <td>0</td>
-                  
-                  <td>5</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>22</td>
-                  
-                  <td>27</td>
-                  
-                  <td>5115</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.023</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.011</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.002</td>
-                  
-                  <td>0.105</td>
-                  
-                  <td>0.002</td>
-                  
-                  <td>(12,[0,4,6,9,10,11],[1.0,0.023,0.011,0.002,0.105,0.002])</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>132</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>2</td>
-                  
-                  <td>17</td>
-                  
-                  <td>96</td>
-                  
-                  <td>41</td>
-                  
-                  <td>38</td>
-                  
-                  <td>1928</td>
-                  
-                  <td>67</td>
-                  
-                  <td>478993</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.016</td>
-                  
-                  <td>0.227</td>
-                  
-                  <td>0.22</td>
-                  
-                  <td>0.287</td>
-                  
-                  <td>0.158</td>
-                  
-                  <td>0.241</td>
-                  
-                  <td>0.262</td>
-                  
-                  <td>0.243</td>
-                  
-                  <td>[0.0,0.0,0.0,0.25,0.016,0.227,0.22,0.287,0.158,0.241,0.262,0.243]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300014</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>8</td>
-                  
-                  <td>27</td>
-                  
-                  <td>3</td>
-                  
-                  <td>10</td>
-                  
-                  <td>280</td>
-                  
-                  <td>100</td>
-                  
-                  <td>69810</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.107</td>
-                  
-                  <td>0.062</td>
-                  
-                  <td>0.021</td>
-                  
-                  <td>0.042</td>
-                  
-                  <td>0.035</td>
-                  
-                  <td>0.391</td>
-                  
-                  <td>0.035</td>
-                  
-                  <td>[1.0,0.0,0.0,0.25,0.0,0.107,0.062,0.021,0.042,0.035,0.391,0.035]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>52</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>29</td>
-                  
-                  <td>9</td>
-                  
-                  <td>54</td>
-                  
-                  <td>40</td>
-                  
-                  <td>33</td>
-                  
-                  <td>1086</td>
-                  
-                  <td>102</td>
-                  
-                  <td>299714</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.227</td>
-                  
-                  <td>0.12</td>
-                  
-                  <td>0.124</td>
-                  
-                  <td>0.28</td>
-                  
-                  <td>0.138</td>
-                  
-                  <td>0.135</td>
-                  
-                  <td>0.398</td>
-                  
-                  <td>0.152</td>
-                  
-                  <td>[0.0,0.0,0.0,0.25,0.227,0.12,0.124,0.28,0.138,0.135,0.398,0.152]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>86</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>9</td>
-                  
-                  <td>8</td>
-                  
-                  <td>34</td>
-                  
-                  <td>18</td>
-                  
-                  <td>20</td>
-                  
-                  <td>650</td>
-                  
-                  <td>135</td>
-                  
-                  <td>158132</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.07</td>
-                  
-                  <td>0.107</td>
-                  
-                  <td>0.078</td>
-                  
-                  <td>0.126</td>
-                  
-                  <td>0.083</td>
-                  
-                  <td>0.081</td>
-                  
-                  <td>0.527</td>
-                  
-                  <td>0.08</td>
-                  
-                  <td>[1.0,0.0,0.0,0.25,0.07,0.107,0.078,0.126,0.083,0.081,0.527,0.08]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>100010</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>52</td>
-                  
-                  <td>5</td>
-                  
-                  <td>17</td>
-                  
-                  <td>4</td>
-                  
-                  <td>7</td>
-                  
-                  <td>275</td>
-                  
-                  <td>55</td>
-                  
-                  <td>64883</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.406</td>
-                  
-                  <td>0.067</td>
-                  
-                  <td>0.039</td>
-                  
-                  <td>0.028</td>
-                  
-                  <td>0.029</td>
-                  
-                  <td>0.034</td>
-                  
-                  <td>0.215</td>
-                  
-                  <td>0.033</td>
-                  
-                  <td>[0.0,0.0,0.0,0.0,0.406,0.067,0.039,0.028,0.029,0.034,0.215,0.033]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>142</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>3</td>
-                  
-                  <td>13</td>
-                  
-                  <td>111</td>
-                  
-                  <td>28</td>
-                  
-                  <td>50</td>
-                  
-                  <td>1875</td>
-                  
-                  <td>63</td>
-                  
-                  <td>472475</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.023</td>
-                  
-                  <td>0.173</td>
-                  
-                  <td>0.254</td>
-                  
-                  <td>0.196</td>
-                  
-                  <td>0.208</td>
-                  
-                  <td>0.234</td>
-                  
-                  <td>0.246</td>
-                  
-                  <td>0.24</td>
-                  
-                  <td>[1.0,0.0,0.0,0.25,0.023,0.173,0.254,0.196,0.208,0.234,0.246,0.24]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>200009</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>33</td>
-                  
-                  <td>32</td>
-                  
-                  <td>41</td>
-                  
-                  <td>20</td>
-                  
-                  <td>27</td>
-                  
-                  <td>963</td>
-                  
-                  <td>59</td>
-                  
-                  <td>240409</td>
-                  
-                  <td>0.333</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.258</td>
-                  
-                  <td>0.427</td>
-                  
-                  <td>0.094</td>
-                  
-                  <td>0.14</td>
-                  
-                  <td>0.113</td>
-                  
-                  <td>0.12</td>
-                  
-                  <td>0.23</td>
-                  
-                  <td>0.122</td>
-                  
-                  <td>[1.0,0.0,0.333,0.25,0.258,0.427,0.094,0.14,0.113,0.12,0.23,0.122]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>40</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>23</td>
-                  
-                  <td>11</td>
-                  
-                  <td>66</td>
-                  
-                  <td>23</td>
-                  
-                  <td>39</td>
-                  
-                  <td>1078</td>
-                  
-                  <td>79</td>
-                  
-                  <td>256500</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.18</td>
-                  
-                  <td>0.147</td>
-                  
-                  <td>0.151</td>
-                  
-                  <td>0.161</td>
-                  
-                  <td>0.163</td>
-                  
-                  <td>0.134</td>
-                  
-                  <td>0.309</td>
-                  
-                  <td>0.13</td>
-                  
-                  <td>[0.0,0.0,0.0,0.25,0.18,0.147,0.151,0.161,0.163,0.134,0.309,0.13]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>139</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>5</td>
-                  
-                  <td>18</td>
-                  
-                  <td>6</td>
-                  
-                  <td>13</td>
-                  
-                  <td>377</td>
-                  
-                  <td>87</td>
-                  
-                  <td>94137</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.008</td>
-                  
-                  <td>0.067</td>
-                  
-                  <td>0.041</td>
-                  
-                  <td>0.042</td>
-                  
-                  <td>0.054</td>
-                  
-                  <td>0.047</td>
-                  
-                  <td>0.34</td>
-                  
-                  <td>0.048</td>
-                  
-                  <td>[1.0,0.0,0.0,0.25,0.008,0.067,0.041,0.042,0.054,0.047,0.34,0.048]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>94</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>12</td>
-                  
-                  <td>1</td>
-                  
-                  <td>4</td>
-                  
-                  <td>1</td>
-                  
-                  <td>3</td>
-                  
-                  <td>146</td>
-                  
-                  <td>133</td>
-                  
-                  <td>36287</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.094</td>
-                  
-                  <td>0.013</td>
-                  
-                  <td>0.009</td>
-                  
-                  <td>0.007</td>
-                  
-                  <td>0.013</td>
-                  
-                  <td>0.018</td>
-                  
-                  <td>0.52</td>
-                  
-                  <td>0.018</td>
-                  
-                  <td>[0.0,0.0,0.0,0.0,0.094,0.013,0.009,0.007,0.013,0.018,0.52,0.018]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>57</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>6</td>
-                  
-                  <td>2</td>
-                  
-                  <td>3</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>92</td>
-                  
-                  <td>88</td>
-                  
-                  <td>20712</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.047</td>
-                  
-                  <td>0.027</td>
-                  
-                  <td>0.007</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.011</td>
-                  
-                  <td>0.344</td>
-                  
-                  <td>0.01</td>
-                  
-                  <td>[1.0,0.0,0.0,0.0,0.047,0.027,0.007,0.0,0.0,0.011,0.344,0.01]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>96</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>17</td>
-                  
-                  <td>24</td>
-                  
-                  <td>92</td>
-                  
-                  <td>40</td>
-                  
-                  <td>52</td>
-                  
-                  <td>1802</td>
-                  
-                  <td>74</td>
-                  
-                  <td>447301</td>
-                  
-                  <td>0.333</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.133</td>
-                  
-                  <td>0.32</td>
-                  
-                  <td>0.211</td>
-                  
-                  <td>0.28</td>
-                  
-                  <td>0.217</td>
-                  
-                  <td>0.225</td>
-                  
-                  <td>0.289</td>
-                  
-                  <td>0.227</td>
-                  
-                  <td>[0.0,1.0,0.333,0.25,0.133,0.32,0.211,0.28,0.217,0.225,0.289,0.227]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>5</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>11</td>
-                  
-                  <td>0</td>
-                  
-                  <td>11</td>
-                  
-                  <td>3</td>
-                  
-                  <td>8</td>
-                  
-                  <td>161</td>
-                  
-                  <td>49</td>
-                  
-                  <td>38229</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.086</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.025</td>
-                  
-                  <td>0.021</td>
-                  
-                  <td>0.033</td>
-                  
-                  <td>0.02</td>
-                  
-                  <td>0.191</td>
-                  
-                  <td>0.019</td>
-                  
-                  <td>[1.0,0.0,0.0,0.0,0.086,0.0,0.025,0.021,0.033,0.02,0.191,0.019]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>19</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
-                  <td>5</td>
-                  
-                  <td>4</td>
-                  
-                  <td>8</td>
-                  
-                  <td>216</td>
-                  
-                  <td>22</td>
-                  
-                  <td>54292</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.027</td>
-                  
-                  <td>0.011</td>
-                  
-                  <td>0.028</td>
-                  
-                  <td>0.033</td>
-                  
-                  <td>0.027</td>
-                  
-                  <td>0.086</td>
-                  
-                  <td>0.027</td>
-                  
-                  <td>[0.0,1.0,0.0,0.0,0.0,0.027,0.011,0.028,0.033,0.027,0.086,0.027]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>64</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>4</td>
-                  
-                  <td>5</td>
-                  
-                  <td>1</td>
-                  
-                  <td>46</td>
-                  
-                  <td>49</td>
-                  
-                  <td>10799</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.008</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.009</td>
-                  
-                  <td>0.035</td>
-                  
-                  <td>0.004</td>
-                  
-                  <td>0.005</td>
-                  
-                  <td>0.191</td>
-                  
-                  <td>0.005</td>
-                  
-                  <td>[1.0,0.0,0.0,0.0,0.008,0.0,0.009,0.035,0.004,0.005,0.191,0.005]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>41</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>10</td>
-                  
-                  <td>76</td>
-                  
-                  <td>36</td>
-                  
-                  <td>61</td>
-                  
-                  <td>1894</td>
-                  
-                  <td>110</td>
-                  
-                  <td>473524</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.008</td>
-                  
-                  <td>0.133</td>
-                  
-                  <td>0.174</td>
-                  
-                  <td>0.252</td>
-                  
-                  <td>0.254</td>
-                  
-                  <td>0.236</td>
-                  
-                  <td>0.43</td>
-                  
-                  <td>0.24</td>
-                  
-                  <td>[0.0,1.0,0.0,0.0,0.008,0.133,0.174,0.252,0.254,0.236,0.43,0.24]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>100014</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
-                  <td>3</td>
-                  
-                  <td>17</td>
-                  
-                  <td>6</td>
-                  
-                  <td>7</td>
-                  
-                  <td>257</td>
-                  
-                  <td>85</td>
-                  
-                  <td>66533</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.016</td>
-                  
-                  <td>0.04</td>
-                  
-                  <td>0.039</td>
-                  
-                  <td>0.042</td>
-                  
-                  <td>0.029</td>
-                  
-                  <td>0.032</td>
-                  
-                  <td>0.332</td>
-                  
-                  <td>0.034</td>
-                  
-                  <td>[1.0,1.0,0.0,0.0,0.016,0.04,0.039,0.042,0.029,0.032,0.332,0.034]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>200010</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>17</td>
-                  
-                  <td>7</td>
-                  
-                  <td>14</td>
-                  
-                  <td>8</td>
-                  
-                  <td>5</td>
-                  
-                  <td>237</td>
-                  
-                  <td>38</td>
-                  
-                  <td>58739</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.133</td>
-                  
-                  <td>0.093</td>
-                  
-                  <td>0.032</td>
-                  
-                  <td>0.056</td>
-                  
-                  <td>0.021</td>
-                  
-                  <td>0.029</td>
-                  
-                  <td>0.148</td>
-                  
-                  <td>0.03</td>
-                  
-                  <td>[0.0,0.0,0.0,0.0,0.133,0.093,0.032,0.056,0.021,0.029,0.148,0.03]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>88</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>23</td>
-                  
-                  <td>20</td>
-                  
-                  <td>122</td>
-                  
-                  <td>28</td>
-                  
-                  <td>58</td>
-                  
-                  <td>2045</td>
-                  
-                  <td>76</td>
-                  
-                  <td>514685</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.18</td>
-                  
-                  <td>0.267</td>
-                  
-                  <td>0.279</td>
-                  
-                  <td>0.196</td>
-                  
-                  <td>0.242</td>
-                  
-                  <td>0.255</td>
-                  
-                  <td>0.297</td>
-                  
-                  <td>0.261</td>
-                  
-                  <td>[0.0,0.0,0.0,0.25,0.18,0.267,0.279,0.196,0.242,0.255,0.297,0.261]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>107</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>19</td>
-                  
-                  <td>2</td>
-                  
-                  <td>14</td>
-                  
-                  <td>2</td>
-                  
-                  <td>10</td>
-                  
-                  <td>246</td>
-                  
-                  <td>74</td>
-                  
-                  <td>61515</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.148</td>
-                  
-                  <td>0.027</td>
-                  
-                  <td>0.032</td>
-                  
-                  <td>0.014</td>
-                  
-                  <td>0.042</td>
-                  
-                  <td>0.03</td>
-                  
-                  <td>0.289</td>
-                  
-                  <td>0.031</td>
-                  
-                  <td>[0.0,0.0,0.0,0.0,0.148,0.027,0.032,0.014,0.042,0.03,0.289,0.031]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>9</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>2</td>
-                  
-                  <td>16</td>
-                  
-                  <td>32</td>
-                  
-                  <td>118</td>
-                  
-                  <td>40</td>
-                  
-                  <td>77</td>
-                  
-                  <td>2676</td>
-                  
-                  <td>61</td>
-                  
-                  <td>655793</td>
-                  
-                  <td>0.333</td>
-                  
-                  <td>0.5</td>
-                  
-                  <td>0.125</td>
-                  
-                  <td>0.427</td>
-                  
-                  <td>0.27</td>
-                  
-                  <td>0.28</td>
-                  
-                  <td>0.321</td>
-                  
-                  <td>0.334</td>
-                  
-                  <td>0.238</td>
-                  
-                  <td>0.333</td>
-                  
-                  <td>[1.0,0.0,0.333,0.5,0.125,0.427,0.27,0.28,0.321,0.334,0.238,0.333]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>17</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>4</td>
-                  
-                  <td>13</td>
-                  
-                  <td>40</td>
-                  
-                  <td>12</td>
-                  
-                  <td>30</td>
-                  
-                  <td>927</td>
-                  
-                  <td>13</td>
-                  
-                  <td>252525</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.031</td>
-                  
-                  <td>0.173</td>
-                  
-                  <td>0.092</td>
-                  
-                  <td>0.084</td>
-                  
-                  <td>0.125</td>
-                  
-                  <td>0.116</td>
-                  
-                  <td>0.051</td>
-                  
-                  <td>0.128</td>
-                  
-                  <td>[0.0,0.0,0.0,0.25,0.031,0.173,0.092,0.084,0.125,0.116,0.051,0.128]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>200016</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>18</td>
-                  
-                  <td>5</td>
-                  
-                  <td>19</td>
-                  
-                  <td>0</td>
-                  
-                  <td>3</td>
-                  
-                  <td>206</td>
-                  
-                  <td>56</td>
-                  
-                  <td>50518</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.141</td>
-                  
-                  <td>0.067</td>
-                  
-                  <td>0.043</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.013</td>
-                  
-                  <td>0.025</td>
-                  
-                  <td>0.219</td>
-                  
-                  <td>0.025</td>
-                  
-                  <td>[0.0,0.0,0.0,0.0,0.141,0.067,0.043,0.0,0.013,0.025,0.219,0.025]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>114</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>9</td>
-                  
-                  <td>12</td>
-                  
-                  <td>74</td>
-                  
-                  <td>13</td>
-                  
-                  <td>34</td>
-                  
-                  <td>1292</td>
-                  
-                  <td>71</td>
-                  
-                  <td>324432</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.07</td>
-                  
-                  <td>0.16</td>
-                  
-                  <td>0.169</td>
-                  
-                  <td>0.091</td>
-                  
-                  <td>0.142</td>
-                  
-                  <td>0.161</td>
-                  
-                  <td>0.277</td>
-                  
-                  <td>0.165</td>
-                  
-                  <td>[1.0,0.0,0.0,0.25,0.07,0.16,0.169,0.091,0.142,0.161,0.277,0.165]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>59</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>2</td>
-                  
-                  <td>11</td>
-                  
-                  <td>9</td>
-                  
-                  <td>30</td>
-                  
-                  <td>16</td>
-                  
-                  <td>14</td>
-                  
-                  <td>724</td>
-                  
-                  <td>65</td>
-                  
-                  <td>192058</td>
-                  
-                  <td>0.333</td>
-                  
-                  <td>0.5</td>
-                  
-                  <td>0.086</td>
-                  
-                  <td>0.12</td>
-                  
-                  <td>0.069</td>
-                  
-                  <td>0.112</td>
-                  
-                  <td>0.058</td>
-                  
-                  <td>0.09</td>
-                  
-                  <td>0.254</td>
-                  
-                  <td>0.097</td>
-                  
-                  <td>[1.0,0.0,0.333,0.5,0.086,0.12,0.069,0.112,0.058,0.09,0.254,0.097]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>8</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>18</td>
-                  
-                  <td>3</td>
-                  
-                  <td>16</td>
-                  
-                  <td>5</td>
-                  
-                  <td>6</td>
-                  
-                  <td>251</td>
-                  
-                  <td>115</td>
-                  
-                  <td>61690</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.141</td>
-                  
-                  <td>0.04</td>
-                  
-                  <td>0.037</td>
-                  
-                  <td>0.035</td>
-                  
-                  <td>0.025</td>
-                  
-                  <td>0.031</td>
-                  
-                  <td>0.449</td>
-                  
-                  <td>0.031</td>
-                  
-                  <td>[0.0,0.0,0.0,0.0,0.141,0.04,0.037,0.035,0.025,0.031,0.449,0.031]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300008</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>16</td>
-                  
-                  <td>111</td>
-                  
-                  <td>23</td>
-                  
-                  <td>43</td>
-                  
-                  <td>1393</td>
-                  
-                  <td>91</td>
-                  
-                  <td>345519</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.008</td>
-                  
-                  <td>0.213</td>
-                  
-                  <td>0.254</td>
-                  
-                  <td>0.161</td>
-                  
-                  <td>0.179</td>
-                  
-                  <td>0.174</td>
-                  
-                  <td>0.355</td>
-                  
-                  <td>0.175</td>
-                  
-                  <td>[0.0,1.0,0.0,0.0,0.008,0.213,0.254,0.161,0.179,0.174,0.355,0.175]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>23</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>19</td>
-                  
-                  <td>6</td>
-                  
-                  <td>28</td>
-                  
-                  <td>15</td>
-                  
-                  <td>21</td>
-                  
-                  <td>656</td>
-                  
-                  <td>136</td>
-                  
-                  <td>163813</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.148</td>
-                  
-                  <td>0.08</td>
-                  
-                  <td>0.064</td>
-                  
-                  <td>0.105</td>
-                  
-                  <td>0.087</td>
-                  
-                  <td>0.082</td>
-                  
-                  <td>0.531</td>
-                  
-                  <td>0.083</td>
-                  
-                  <td>[0.0,0.0,0.0,0.25,0.148,0.08,0.064,0.105,0.087,0.082,0.531,0.083]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>100002</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>3</td>
-                  
-                  <td>0</td>
-                  
-                  <td>5</td>
-                  
-                  <td>1</td>
-                  
-                  <td>5</td>
-                  
-                  <td>195</td>
-                  
-                  <td>161</td>
-                  
-                  <td>48284</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.023</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.011</td>
-                  
-                  <td>0.007</td>
-                  
-                  <td>0.021</td>
-                  
-                  <td>0.024</td>
-                  
-                  <td>0.629</td>
-                  
-                  <td>0.024</td>
-                  
-                  <td>[0.0,1.0,0.0,0.0,0.023,0.0,0.011,0.007,0.021,0.024,0.629,0.024]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>200020</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>69</td>
-                  
-                  <td>36</td>
-                  
-                  <td>56</td>
-                  
-                  <td>10</td>
-                  
-                  <td>32</td>
-                  
-                  <td>1169</td>
-                  
-                  <td>76</td>
-                  
-                  <td>281054</td>
-                  
-                  <td>0.333</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.539</td>
-                  
-                  <td>0.48</td>
-                  
-                  <td>0.128</td>
-                  
-                  <td>0.07</td>
-                  
-                  <td>0.133</td>
-                  
-                  <td>0.146</td>
-                  
-                  <td>0.297</td>
-                  
-                  <td>0.143</td>
-                  
-                  <td>[1.0,0.0,0.333,0.25,0.539,0.48,0.128,0.07,0.133,0.146,0.297,0.143]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>84</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>10</td>
-                  
-                  <td>0</td>
-                  
-                  <td>4</td>
-                  
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
-                  <td>73</td>
-                  
-                  <td>53</td>
-                  
-                  <td>17190</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.078</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.009</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.008</td>
-                  
-                  <td>0.009</td>
-                  
-                  <td>0.207</td>
-                  
-                  <td>0.009</td>
-                  
-                  <td>(12,[4,6,8,9,10,11],[0.078,0.009,0.008,0.009,0.207,0.009])</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>136</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>13</td>
-                  
-                  <td>15</td>
-                  
-                  <td>110</td>
-                  
-                  <td>60</td>
-                  
-                  <td>66</td>
-                  
-                  <td>2124</td>
-                  
-                  <td>76</td>
-                  
-                  <td>573780</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.102</td>
-                  
-                  <td>0.2</td>
-                  
-                  <td>0.252</td>
-                  
-                  <td>0.42</td>
-                  
-                  <td>0.275</td>
-                  
-                  <td>0.265</td>
-                  
-                  <td>0.297</td>
-                  
-                  <td>0.291</td>
-                  
-                  <td>[0.0,0.0,0.0,0.25,0.102,0.2,0.252,0.42,0.275,0.265,0.297,0.291]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300003</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>27</td>
-                  
-                  <td>99</td>
-                  
-                  <td>6291</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.016</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.005</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.004</td>
-                  
-                  <td>0.003</td>
-                  
-                  <td>0.387</td>
-                  
-                  <td>0.003</td>
-                  
-                  <td>[1.0,0.0,0.0,0.0,0.016,0.0,0.005,0.0,0.004,0.003,0.387,0.003]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>69</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>3</td>
-                  
-                  <td>9</td>
-                  
-                  <td>72</td>
-                  
-                  <td>12</td>
-                  
-                  <td>33</td>
-                  
-                  <td>1125</td>
-                  
-                  <td>71</td>
-                  
-                  <td>284410</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.023</td>
-                  
-                  <td>0.12</td>
-                  
-                  <td>0.165</td>
-                  
-                  <td>0.084</td>
-                  
-                  <td>0.138</td>
-                  
-                  <td>0.14</td>
-                  
-                  <td>0.277</td>
-                  
-                  <td>0.144</td>
-                  
-                  <td>[0.0,0.0,0.0,0.25,0.023,0.12,0.165,0.084,0.138,0.14,0.277,0.144]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>129</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>2</td>
-                  
-                  <td>7</td>
-                  
-                  <td>7</td>
-                  
-                  <td>11</td>
-                  
-                  <td>11</td>
-                  
-                  <td>331</td>
-                  
-                  <td>17</td>
-                  
-                  <td>80504</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.016</td>
-                  
-                  <td>0.093</td>
-                  
-                  <td>0.016</td>
-                  
-                  <td>0.077</td>
-                  
-                  <td>0.046</td>
-                  
-                  <td>0.041</td>
-                  
-                  <td>0.066</td>
-                  
-                  <td>0.041</td>
-                  
-                  <td>[1.0,0.0,0.0,0.25,0.016,0.093,0.016,0.077,0.046,0.041,0.066,0.041]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>200015</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>22</td>
-                  
-                  <td>10</td>
-                  
-                  <td>10</td>
-                  
-                  <td>2</td>
-                  
-                  <td>13</td>
-                  
-                  <td>258</td>
-                  
-                  <td>88</td>
-                  
-                  <td>59488</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.172</td>
-                  
-                  <td>0.133</td>
-                  
-                  <td>0.023</td>
-                  
-                  <td>0.014</td>
-                  
-                  <td>0.054</td>
-                  
-                  <td>0.032</td>
-                  
-                  <td>0.344</td>
-                  
-                  <td>0.03</td>
-                  
-                  <td>[1.0,0.0,0.0,0.0,0.172,0.133,0.023,0.014,0.054,0.032,0.344,0.03]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>97</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>24</td>
-                  
-                  <td>12</td>
-                  
-                  <td>108</td>
-                  
-                  <td>32</td>
-                  
-                  <td>61</td>
-                  
-                  <td>1975</td>
-                  
-                  <td>87</td>
-                  
-                  <td>482994</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.188</td>
-                  
-                  <td>0.16</td>
-                  
-                  <td>0.247</td>
-                  
-                  <td>0.224</td>
-                  
-                  <td>0.254</td>
-                  
-                  <td>0.247</td>
-                  
-                  <td>0.34</td>
-                  
-                  <td>0.245</td>
-                  
-                  <td>[0.0,0.0,0.0,0.25,0.188,0.16,0.247,0.224,0.254,0.247,0.34,0.245]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300025</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>2</td>
-                  
-                  <td>13</td>
-                  
-                  <td>139</td>
-                  
-                  <td>17</td>
-                  
-                  <td>42</td>
-                  
-                  <td>1297</td>
-                  
-                  <td>77</td>
-                  
-                  <td>314197</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.016</td>
-                  
-                  <td>0.173</td>
-                  
-                  <td>0.318</td>
-                  
-                  <td>0.119</td>
-                  
-                  <td>0.175</td>
-                  
-                  <td>0.162</td>
-                  
-                  <td>0.301</td>
-                  
-                  <td>0.159</td>
-                  
-                  <td>[1.0,0.0,0.0,0.25,0.016,0.173,0.318,0.119,0.175,0.162,0.301,0.159]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>63</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>5</td>
-                  
-                  <td>3</td>
-                  
-                  <td>6</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>87</td>
-                  
-                  <td>39</td>
-                  
-                  <td>22988</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.039</td>
-                  
-                  <td>0.04</td>
-                  
-                  <td>0.014</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.004</td>
-                  
-                  <td>0.011</td>
-                  
-                  <td>0.152</td>
-                  
-                  <td>0.011</td>
-                  
-                  <td>[0.0,0.0,0.0,0.0,0.039,0.04,0.014,0.0,0.004,0.011,0.152,0.011]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>77</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>6</td>
-                  
-                  <td>4</td>
-                  
-                  <td>46</td>
-                  
-                  <td>8</td>
-                  
-                  <td>23</td>
-                  
-                  <td>1047</td>
-                  
-                  <td>65</td>
-                  
-                  <td>261923</td>
-                  
-                  <td>0.333</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.047</td>
-                  
-                  <td>0.053</td>
-                  
-                  <td>0.105</td>
-                  
-                  <td>0.056</td>
-                  
-                  <td>0.096</td>
-                  
-                  <td>0.131</td>
-                  
-                  <td>0.254</td>
-                  
-                  <td>0.133</td>
-                  
-                  <td>[0.0,1.0,0.333,0.25,0.047,0.053,0.105,0.056,0.096,0.131,0.254,0.133]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>102</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>17</td>
-                  
-                  <td>2</td>
-                  
-                  <td>6</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>158</td>
-                  
-                  <td>65</td>
-                  
-                  <td>40309</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.133</td>
-                  
-                  <td>0.027</td>
-                  
-                  <td>0.014</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.004</td>
-                  
-                  <td>0.019</td>
-                  
-                  <td>0.254</td>
-                  
-                  <td>0.02</td>
-                  
-                  <td>[1.0,0.0,0.0,0.0,0.133,0.027,0.014,0.0,0.004,0.019,0.254,0.02]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>25</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>27</td>
-                  
-                  <td>17</td>
-                  
-                  <td>98</td>
-                  
-                  <td>41</td>
-                  
-                  <td>61</td>
-                  
-                  <td>1880</td>
-                  
-                  <td>82</td>
-                  
-                  <td>467749</td>
-                  
-                  <td>0.333</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.211</td>
-                  
-                  <td>0.227</td>
-                  
-                  <td>0.224</td>
-                  
-                  <td>0.287</td>
-                  
-                  <td>0.254</td>
-                  
-                  <td>0.235</td>
-                  
-                  <td>0.32</td>
-                  
-                  <td>0.237</td>
-                  
-                  <td>[0.0,1.0,0.333,0.25,0.211,0.227,0.224,0.287,0.254,0.235,0.32,0.237]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>113</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>12</td>
-                  
-                  <td>82</td>
-                  
-                  <td>32</td>
-                  
-                  <td>50</td>
-                  
-                  <td>1585</td>
-                  
-                  <td>123</td>
-                  
-                  <td>393855</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.008</td>
-                  
-                  <td>0.16</td>
-                  
-                  <td>0.188</td>
-                  
-                  <td>0.224</td>
-                  
-                  <td>0.208</td>
-                  
-                  <td>0.198</td>
-                  
-                  <td>0.48</td>
-                  
-                  <td>0.2</td>
-                  
-                  <td>[0.0,0.0,0.0,0.25,0.008,0.16,0.188,0.224,0.208,0.198,0.48,0.2]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>100006</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>3</td>
-                  
-                  <td>2</td>
-                  
-                  <td>2</td>
-                  
-                  <td>4</td>
-                  
-                  <td>1</td>
-                  
-                  <td>26</td>
-                  
-                  <td>9</td>
-                  
-                  <td>5606</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.023</td>
-                  
-                  <td>0.027</td>
-                  
-                  <td>0.005</td>
-                  
-                  <td>0.028</td>
-                  
-                  <td>0.004</td>
-                  
-                  <td>0.003</td>
-                  
-                  <td>0.035</td>
-                  
-                  <td>0.003</td>
-                  
-                  <td>[0.0,0.0,0.0,0.0,0.023,0.027,0.005,0.028,0.004,0.003,0.035,0.003]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300009</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>15</td>
-                  
-                  <td>132</td>
-                  
-                  <td>21</td>
-                  
-                  <td>44</td>
-                  
-                  <td>1427</td>
-                  
-                  <td>101</td>
-                  
-                  <td>352776</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.2</td>
-                  
-                  <td>0.302</td>
-                  
-                  <td>0.147</td>
-                  
-                  <td>0.183</td>
-                  
-                  <td>0.178</td>
-                  
-                  <td>0.395</td>
-                  
-                  <td>0.179</td>
-                  
-                  <td>[0.0,0.0,0.0,0.25,0.0,0.2,0.302,0.147,0.183,0.178,0.395,0.179]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>62</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>21</td>
-                  
-                  <td>77</td>
-                  
-                  <td>34</td>
-                  
-                  <td>39</td>
-                  
-                  <td>1591</td>
-                  
-                  <td>134</td>
-                  
-                  <td>392111</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.008</td>
-                  
-                  <td>0.28</td>
-                  
-                  <td>0.176</td>
-                  
-                  <td>0.238</td>
-                  
-                  <td>0.163</td>
-                  
-                  <td>0.199</td>
-                  
-                  <td>0.523</td>
-                  
-                  <td>0.199</td>
-                  
-                  <td>[1.0,1.0,0.0,0.0,0.008,0.28,0.176,0.238,0.163,0.199,0.523,0.199]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>156</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>3</td>
-                  
-                  <td>0</td>
-                  
-                  <td>420</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.008</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>(12,[0,4],[1.0,0.008])</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>143</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>15</td>
-                  
-                  <td>0</td>
-                  
-                  <td>5</td>
-                  
-                  <td>6</td>
-                  
-                  <td>2</td>
-                  
-                  <td>101</td>
-                  
-                  <td>62</td>
-                  
-                  <td>24428</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.117</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.011</td>
-                  
-                  <td>0.042</td>
-                  
-                  <td>0.008</td>
-                  
-                  <td>0.012</td>
-                  
-                  <td>0.242</td>
-                  
-                  <td>0.012</td>
-                  
-                  <td>[0.0,0.0,0.0,0.0,0.117,0.0,0.011,0.042,0.008,0.012,0.242,0.012]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>21</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
-                  <td>27</td>
-                  
-                  <td>8</td>
-                  
-                  <td>9</td>
-                  
-                  <td>499</td>
-                  
-                  <td>69</td>
-                  
-                  <td>119943</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.027</td>
-                  
-                  <td>0.062</td>
-                  
-                  <td>0.056</td>
-                  
-                  <td>0.037</td>
-                  
-                  <td>0.062</td>
-                  
-                  <td>0.27</td>
-                  
-                  <td>0.061</td>
-                  
-                  <td>[1.0,1.0,0.0,0.0,0.0,0.027,0.062,0.056,0.037,0.062,0.27,0.061]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>60</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>3</td>
-                  
-                  <td>9</td>
-                  
-                  <td>84</td>
-                  
-                  <td>27</td>
-                  
-                  <td>58</td>
-                  
-                  <td>1644</td>
-                  
-                  <td>72</td>
-                  
-                  <td>411172</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.023</td>
-                  
-                  <td>0.12</td>
-                  
-                  <td>0.192</td>
-                  
-                  <td>0.189</td>
-                  
-                  <td>0.242</td>
-                  
-                  <td>0.205</td>
-                  
-                  <td>0.281</td>
-                  
-                  <td>0.209</td>
-                  
-                  <td>[1.0,0.0,0.0,0.25,0.023,0.12,0.192,0.189,0.242,0.205,0.281,0.209]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>90</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>3</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>37</td>
-                  
-                  <td>102</td>
-                  
-                  <td>8912</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.023</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.004</td>
-                  
-                  <td>0.398</td>
-                  
-                  <td>0.004</td>
-                  
-                  <td>(12,[0,4,9,10,11],[1.0,0.023,0.004,0.398,0.004])</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>100018</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
-                  <td>2</td>
-                  
-                  <td>80</td>
-                  
-                  <td>9</td>
-                  
-                  <td>46</td>
-                  
-                  <td>23</td>
-                  
-                  <td>31</td>
-                  
-                  <td>1002</td>
-                  
-                  <td>111</td>
-                  
-                  <td>243416</td>
-                  
-                  <td>0.667</td>
-                  
-                  <td>0.5</td>
-                  
-                  <td>0.625</td>
-                  
-                  <td>0.12</td>
-                  
-                  <td>0.105</td>
-                  
-                  <td>0.161</td>
-                  
-                  <td>0.129</td>
-                  
-                  <td>0.125</td>
-                  
-                  <td>0.434</td>
-                  
-                  <td>0.123</td>
-                  
-                  <td>[1.0,0.0,0.667,0.5,0.625,0.12,0.105,0.161,0.129,0.125,0.434,0.123]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>141</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>11</td>
-                  
-                  <td>5</td>
-                  
-                  <td>42</td>
-                  
-                  <td>17</td>
-                  
-                  <td>27</td>
-                  
-                  <td>929</td>
-                  
-                  <td>76</td>
-                  
-                  <td>228087</td>
-                  
-                  <td>0.333</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.086</td>
-                  
-                  <td>0.067</td>
-                  
-                  <td>0.096</td>
-                  
-                  <td>0.119</td>
-                  
-                  <td>0.113</td>
-                  
-                  <td>0.116</td>
-                  
-                  <td>0.297</td>
-                  
-                  <td>0.116</td>
-                  
-                  <td>[0.0,1.0,0.333,0.25,0.086,0.067,0.096,0.119,0.113,0.116,0.297,0.116]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>145</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>8</td>
-                  
-                  <td>61</td>
-                  
-                  <td>34</td>
-                  
-                  <td>27</td>
-                  
-                  <td>1129</td>
-                  
-                  <td>102</td>
-                  
-                  <td>284321</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.107</td>
-                  
-                  <td>0.14</td>
-                  
-                  <td>0.238</td>
-                  
-                  <td>0.113</td>
-                  
-                  <td>0.141</td>
-                  
-                  <td>0.398</td>
-                  
-                  <td>0.144</td>
-                  
-                  <td>[0.0,1.0,0.0,0.0,0.0,0.107,0.14,0.238,0.113,0.141,0.398,0.144]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>56</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>19</td>
-                  
-                  <td>7</td>
-                  
-                  <td>49</td>
-                  
-                  <td>21</td>
-                  
-                  <td>20</td>
-                  
-                  <td>734</td>
-                  
-                  <td>67</td>
-                  
-                  <td>176994</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.148</td>
-                  
-                  <td>0.093</td>
-                  
-                  <td>0.112</td>
-                  
-                  <td>0.147</td>
-                  
-                  <td>0.083</td>
-                  
-                  <td>0.091</td>
-                  
-                  <td>0.262</td>
-                  
-                  <td>0.09</td>
-                  
-                  <td>[1.0,0.0,0.0,0.25,0.148,0.093,0.112,0.147,0.083,0.091,0.262,0.09]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300005</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>2</td>
-                  
-                  <td>4</td>
-                  
-                  <td>35</td>
-                  
-                  <td>8</td>
-                  
-                  <td>9</td>
-                  
-                  <td>312</td>
-                  
-                  <td>157</td>
-                  
-                  <td>76230</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.016</td>
-                  
-                  <td>0.053</td>
-                  
-                  <td>0.08</td>
-                  
-                  <td>0.056</td>
-                  
-                  <td>0.037</td>
-                  
-                  <td>0.039</td>
-                  
-                  <td>0.613</td>
-                  
-                  <td>0.039</td>
-                  
-                  <td>[0.0,0.0,0.0,0.25,0.016,0.053,0.08,0.056,0.037,0.039,0.613,0.039]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>33</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>9</td>
-                  
-                  <td>79</td>
-                  
-                  <td>31</td>
-                  
-                  <td>33</td>
-                  
-                  <td>1257</td>
-                  
-                  <td>163</td>
-                  
-                  <td>307579</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.008</td>
-                  
-                  <td>0.12</td>
-                  
-                  <td>0.181</td>
-                  
-                  <td>0.217</td>
-                  
-                  <td>0.138</td>
-                  
-                  <td>0.157</td>
-                  
-                  <td>0.637</td>
-                  
-                  <td>0.156</td>
-                  
-                  <td>[1.0,1.0,0.0,0.0,0.008,0.12,0.181,0.217,0.138,0.157,0.637,0.156]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>83</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>19</td>
-                  
-                  <td>10</td>
-                  
-                  <td>69</td>
-                  
-                  <td>18</td>
-                  
-                  <td>28</td>
-                  
-                  <td>1235</td>
-                  
-                  <td>124</td>
-                  
-                  <td>300933</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.148</td>
-                  
-                  <td>0.133</td>
-                  
-                  <td>0.158</td>
-                  
-                  <td>0.126</td>
-                  
-                  <td>0.117</td>
-                  
-                  <td>0.154</td>
-                  
-                  <td>0.484</td>
-                  
-                  <td>0.153</td>
-                  
-                  <td>[1.0,0.0,0.0,0.25,0.148,0.133,0.158,0.126,0.117,0.154,0.484,0.153]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>110</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>17</td>
-                  
-                  <td>2</td>
-                  
-                  <td>14</td>
-                  
-                  <td>7</td>
-                  
-                  <td>3</td>
-                  
-                  <td>178</td>
-                  
-                  <td>68</td>
-                  
-                  <td>57941</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.133</td>
-                  
-                  <td>0.027</td>
-                  
-                  <td>0.032</td>
-                  
-                  <td>0.049</td>
-                  
-                  <td>0.013</td>
-                  
-                  <td>0.022</td>
-                  
-                  <td>0.266</td>
-                  
-                  <td>0.029</td>
-                  
-                  <td>[1.0,0.0,0.0,0.0,0.133,0.027,0.032,0.049,0.013,0.022,0.266,0.029]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>150</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>17</td>
-                  
-                  <td>0</td>
-                  
-                  <td>7</td>
-                  
-                  <td>1</td>
-                  
-                  <td>8</td>
-                  
-                  <td>178</td>
-                  
-                  <td>124</td>
-                  
-                  <td>52556</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.133</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.016</td>
-                  
-                  <td>0.007</td>
-                  
-                  <td>0.033</td>
-                  
-                  <td>0.022</td>
-                  
-                  <td>0.484</td>
-                  
-                  <td>0.026</td>
-                  
-                  <td>[1.0,0.0,0.0,0.0,0.133,0.0,0.016,0.007,0.033,0.022,0.484,0.026]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>68</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>4</td>
-                  
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
-                  <td>7</td>
-                  
-                  <td>0</td>
-                  
-                  <td>29</td>
-                  
-                  <td>100</td>
-                  
-                  <td>7649</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.031</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.005</td>
-                  
-                  <td>0.049</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.003</td>
-                  
-                  <td>0.391</td>
-                  
-                  <td>0.004</td>
-                  
-                  <td>(12,[4,6,7,9,10,11],[0.031,0.005,0.049,0.003,0.391,0.004])</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>71</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>6</td>
-                  
-                  <td>4</td>
-                  
-                  <td>14</td>
-                  
-                  <td>9</td>
-                  
-                  <td>5</td>
-                  
-                  <td>264</td>
-                  
-                  <td>53</td>
-                  
-                  <td>64198</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.047</td>
-                  
-                  <td>0.053</td>
-                  
-                  <td>0.032</td>
-                  
-                  <td>0.063</td>
-                  
-                  <td>0.021</td>
-                  
-                  <td>0.033</td>
-                  
-                  <td>0.207</td>
-                  
-                  <td>0.032</td>
-                  
-                  <td>[1.0,0.0,0.0,0.25,0.047,0.053,0.032,0.063,0.021,0.033,0.207,0.032]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>116</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>3</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>2</td>
-                  
-                  <td>4</td>
-                  
-                  <td>63</td>
-                  
-                  <td>94</td>
-                  
-                  <td>24516</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.023</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.002</td>
-                  
-                  <td>0.014</td>
-                  
-                  <td>0.017</td>
-                  
-                  <td>0.008</td>
-                  
-                  <td>0.367</td>
-                  
-                  <td>0.012</td>
-                  
-                  <td>[0.0,0.0,0.0,0.0,0.023,0.0,0.002,0.014,0.017,0.008,0.367,0.012]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>123</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>14</td>
-                  
-                  <td>1</td>
-                  
-                  <td>5</td>
-                  
-                  <td>5</td>
-                  
-                  <td>8</td>
-                  
-                  <td>150</td>
-                  
-                  <td>101</td>
-                  
-                  <td>33282</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.109</td>
-                  
-                  <td>0.013</td>
-                  
-                  <td>0.011</td>
-                  
-                  <td>0.035</td>
-                  
-                  <td>0.033</td>
-                  
-                  <td>0.018</td>
-                  
-                  <td>0.395</td>
-                  
-                  <td>0.017</td>
-                  
-                  <td>[1.0,0.0,0.0,0.0,0.109,0.013,0.011,0.035,0.033,0.018,0.395,0.017]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>200007</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>65</td>
-                  
-                  <td>53</td>
-                  
-                  <td>16220</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.005</td>
-                  
-                  <td>0.007</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.008</td>
-                  
-                  <td>0.207</td>
-                  
-                  <td>0.008</td>
-                  
-                  <td>(12,[1,6,7,9,10,11],[1.0,0.005,0.007,0.008,0.207,0.008])</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300021</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>5</td>
-                  
-                  <td>36</td>
-                  
-                  <td>336</td>
-                  
-                  <td>89</td>
-                  
-                  <td>107</td>
-                  
-                  <td>3816</td>
-                  
-                  <td>69</td>
-                  
-                  <td>984861</td>
-                  
-                  <td>0.333</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.039</td>
-                  
-                  <td>0.48</td>
-                  
-                  <td>0.769</td>
-                  
-                  <td>0.622</td>
-                  
-                  <td>0.446</td>
-                  
-                  <td>0.477</td>
-                  
-                  <td>0.27</td>
-                  
-                  <td>0.5</td>
-                  
-                  <td>[0.0,1.0,0.333,0.25,0.039,0.48,0.769,0.622,0.446,0.477,0.27,0.5]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>119</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>9</td>
-                  
-                  <td>1</td>
-                  
-                  <td>7</td>
-                  
-                  <td>4</td>
-                  
-                  <td>5</td>
-                  
-                  <td>173</td>
-                  
-                  <td>189</td>
-                  
-                  <td>43441</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.07</td>
-                  
-                  <td>0.013</td>
-                  
-                  <td>0.016</td>
-                  
-                  <td>0.028</td>
-                  
-                  <td>0.021</td>
-                  
-                  <td>0.021</td>
-                  
-                  <td>0.738</td>
-                  
-                  <td>0.022</td>
-                  
-                  <td>[0.0,0.0,0.0,0.0,0.07,0.013,0.016,0.028,0.021,0.021,0.738,0.022]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>2</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>6</td>
-                  
-                  <td>29</td>
-                  
-                  <td>20</td>
-                  
-                  <td>13</td>
-                  
-                  <td>755</td>
-                  
-                  <td>69</td>
-                  
-                  <td>186907</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.08</td>
-                  
-                  <td>0.066</td>
-                  
-                  <td>0.14</td>
-                  
-                  <td>0.054</td>
-                  
-                  <td>0.094</td>
-                  
-                  <td>0.27</td>
-                  
-                  <td>0.095</td>
-                  
-                  <td>[0.0,1.0,0.0,0.0,0.0,0.08,0.066,0.14,0.054,0.094,0.27,0.095]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>131</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>2</td>
-                  
-                  <td>1</td>
-                  
-                  <td>5</td>
-                  
-                  <td>20</td>
-                  
-                  <td>72</td>
-                  
-                  <td>26</td>
-                  
-                  <td>51</td>
-                  
-                  <td>1564</td>
-                  
-                  <td>121</td>
-                  
-                  <td>387856</td>
-                  
-                  <td>0.667</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.039</td>
-                  
-                  <td>0.267</td>
-                  
-                  <td>0.165</td>
-                  
-                  <td>0.182</td>
-                  
-                  <td>0.212</td>
-                  
-                  <td>0.195</td>
-                  
-                  <td>0.473</td>
-                  
-                  <td>0.197</td>
-                  
-                  <td>[1.0,0.0,0.667,0.25,0.039,0.267,0.165,0.182,0.212,0.195,0.473,0.197]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>30</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>72</td>
-                  
-                  <td>17</td>
-                  
-                  <td>62</td>
-                  
-                  <td>25</td>
-                  
-                  <td>47</td>
-                  
-                  <td>1417</td>
-                  
-                  <td>63</td>
-                  
-                  <td>352501</td>
-                  
-                  <td>0.333</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.562</td>
-                  
-                  <td>0.227</td>
-                  
-                  <td>0.142</td>
-                  
-                  <td>0.175</td>
-                  
-                  <td>0.196</td>
-                  
-                  <td>0.177</td>
-                  
-                  <td>0.246</td>
-                  
-                  <td>0.179</td>
-                  
-                  <td>[1.0,1.0,0.333,0.25,0.562,0.227,0.142,0.175,0.196,0.177,0.246,0.179]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>200011</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>27</td>
-                  
-                  <td>24</td>
-                  
-                  <td>37</td>
-                  
-                  <td>13</td>
-                  
-                  <td>18</td>
-                  
-                  <td>650</td>
-                  
-                  <td>110</td>
-                  
-                  <td>163538</td>
-                  
-                  <td>0.333</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.211</td>
-                  
-                  <td>0.32</td>
-                  
-                  <td>0.085</td>
-                  
-                  <td>0.091</td>
-                  
-                  <td>0.075</td>
-                  
-                  <td>0.081</td>
-                  
-                  <td>0.43</td>
-                  
-                  <td>0.083</td>
-                  
-                  <td>[1.0,0.0,0.333,0.25,0.211,0.32,0.085,0.091,0.075,0.081,0.43,0.083]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>300001</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>6</td>
-                  
-                  <td>17</td>
-                  
-                  <td>148</td>
-                  
-                  <td>30</td>
-                  
-                  <td>69</td>
-                  
-                  <td>1749</td>
-                  
-                  <td>188</td>
-                  
-                  <td>435540</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.047</td>
-                  
-                  <td>0.227</td>
-                  
-                  <td>0.339</td>
-                  
-                  <td>0.21</td>
-                  
-                  <td>0.287</td>
-                  
-                  <td>0.218</td>
-                  
-                  <td>0.734</td>
-                  
-                  <td>0.221</td>
-                  
-                  <td>[0.0,0.0,0.0,0.25,0.047,0.227,0.339,0.21,0.287,0.218,0.734,0.221]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>144</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>9</td>
-                  
-                  <td>1</td>
-                  
-                  <td>4</td>
-                  
-                  <td>4</td>
-                  
-                  <td>3</td>
-                  
-                  <td>98</td>
-                  
-                  <td>99</td>
-                  
-                  <td>24175</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.07</td>
-                  
-                  <td>0.013</td>
-                  
-                  <td>0.009</td>
-                  
-                  <td>0.028</td>
-                  
-                  <td>0.013</td>
-                  
-                  <td>0.012</td>
-                  
-                  <td>0.387</td>
-                  
-                  <td>0.012</td>
-                  
-                  <td>[1.0,0.0,0.0,0.0,0.07,0.013,0.009,0.028,0.013,0.012,0.387,0.012]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>18</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>20</td>
-                  
-                  <td>10</td>
-                  
-                  <td>14</td>
-                  
-                  <td>429</td>
-                  
-                  <td>38</td>
-                  
-                  <td>107908</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.013</td>
-                  
-                  <td>0.046</td>
-                  
-                  <td>0.07</td>
-                  
-                  <td>0.058</td>
-                  
-                  <td>0.053</td>
-                  
-                  <td>0.148</td>
-                  
-                  <td>0.055</td>
-                  
-                  <td>[1.0,1.0,0.0,0.0,0.0,0.013,0.046,0.07,0.058,0.053,0.148,0.055]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>200005</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>5</td>
-                  
-                  <td>0</td>
-                  
-                  <td>7</td>
-                  
-                  <td>3</td>
-                  
-                  <td>5</td>
-                  
-                  <td>139</td>
-                  
-                  <td>113</td>
-                  
-                  <td>31463</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.039</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.016</td>
-                  
-                  <td>0.021</td>
-                  
-                  <td>0.021</td>
-                  
-                  <td>0.017</td>
-                  
-                  <td>0.441</td>
-                  
-                  <td>0.016</td>
-                  
-                  <td>[1.0,0.0,0.0,0.25,0.039,0.0,0.016,0.021,0.021,0.017,0.441,0.016]</td>
-                  
-                </tr>
-                
-                <tr>
-                  
-                  <td>104</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>0</td>
-                  
-                  <td>1</td>
-                  
-                  <td>23</td>
-                  
-                  <td>17</td>
-                  
-                  <td>84</td>
-                  
-                  <td>23</td>
-                  
-                  <td>43</td>
-                  
-                  <td>1781</td>
-                  
-                  <td>125</td>
-                  
-                  <td>438413</td>
-                  
-                  <td>0.0</td>
-                  
-                  <td>0.25</td>
-                  
-                  <td>0.18</td>
-                  
-                  <td>0.227</td>
-                  
-                  <td>0.192</td>
-                  
-                  <td>0.161</td>
-                  
-                  <td>0.179</td>
-                  
-                  <td>0.222</td>
-                  
-                  <td>0.488</td>
-                  
-                  <td>0.223</td>
-                  
-                  <td>[0.0,0.0,0.0,0.25,0.18,0.227,0.192,0.161,0.179,0.222,0.488,0.223]</td>
-                  
-                </tr>
-                
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <script class="pd_save">
-    $(function() {
-      var tableWrapper = $('.df-table-wrapper-969bf51c');
-      var fixedHeader = $('.fixed-header', tableWrapper);
-      var tableContainer = $('.df-table-container', tableWrapper);
-      var table = $('.df-table', tableContainer);
-      var rows = $('tbody > tr', table);
-      var total = 100;
-  
-      fixedHeader
-        .css('width', table.width())
-        .find('.fixed-cell')
-        .each(function(i, e) {
-          $(this).css('width', $('.df-table-wrapper-969bf51c th:nth-child(' + (i+1) + ')').css('width'));
-        });
-  
-      tableContainer.scroll(function() {
-        fixedHeader.css({ left: table.position().left });
-      });
-  
-      rows.on("click", function(e){
-          var txt = e.delegateTarget.innerText;
-          var splits = txt.split("\t");
-          var len = splits.length;
-          var hdrs = $(fixedHeader).find(".fixed-cell");
-          // Add all cells in the selected row as a map to be consumed by the target as needed
-          var payload = {type:"select", targetDivId: "" };
-          for (var i = 0; i < len; i++) {
-            payload[hdrs[i].innerHTML] = splits[i];
-          }
-  
-          //simple selection highlighting, client adds "selected" class
-          $(this).addClass("selected").siblings().removeClass("selected");
-          $(document).trigger('pd_event', payload);
-      });
-  
-      $('.df-table-search', tableWrapper).keyup(function() {
-        var val = '^(?=.*\\b' + $.trim($(this).val()).split(/\s+/).join('\\b)(?=.*\\b') + ').*$';
-        var reg = RegExp(val, 'i');
-        var index = 0;
-        
-        rows.each(function(i, e) {
-          if (!reg.test($(this).text().replace(/\s+/g, ' '))) {
-            $(this).attr('class', 'hidden');
-          }
-          else {
-            $(this).attr('class', (++index % 2 == 0 ? 'even' : 'odd'));
-          }
-        });
-        $('.df-table-search-count', tableWrapper).html('Showing ' + index + ' of ' + total + ' rows');
-      });
-    });
-  
-    $(".df-table-wrapper td:contains('http://')").each(function(){var tc = this.textContent; $(this).wrapInner("<a target='_blank' href='" + tc + "'></a>");});
-    $(".df-table-wrapper td:contains('https://')").each(function(){var tc = this.textContent; $(this).wrapInner("<a target='_blank' href='" + tc + "'></a>");});
-  </script>
-  
-        </div>
-
-
 ## Perform PCA to select relevant features
 
 
 ```python
-pca_number = 5
+pca_number = 3
 pca = PCA(k=pca_number, inputCol="features", outputCol="pcaFeatures")
 model = pca.fit(features_df.select("features"))
-
-#result = model.transform(features_df.select("features")).select("pcaFeatures")
-#result.show(truncate=False)
-#features_df = features_df.withColumn("pcaFeatures", model.transform(features_df.select("features")).select("pcaFeatures"))
 pca_features = model.transform(features_df.select("features")).select("pcaFeatures")
 
 # join column "pcaFeatures" to existing dataframe
 pca_features = pca_features.withColumn("id", F.monotonically_increasing_id())
 features_df = features_df.withColumn("id", F.monotonically_increasing_id())
 features_df = features_df.join(pca_features, "id", "outer").drop("id")
-```
 
-
-```python
 print("Explained variance by {} principal components: {:.2f}%".format(pca_number, sum(model.explainedVariance)*100))
 ```
 
-    Explained variance by 5 principal components: 95.24%
+    Explained variance by 3 principal components: 88.07%
 
 
 # Modeling
-Split the full dataset into train, test, and validation sets. Test out several of the machine learning methods you learned. Evaluate the accuracy of the various models, tuning parameters as necessary. Determine your winning model based on test accuracy and report results on the validation set. Since the churned users are a fairly small subset, I suggest using F1 score as the metric to optimize.
 
 ## Split in training, test, validation set
 
@@ -10396,74 +8817,50 @@ Split the full dataset into train, test, and validation sets. Test out several o
 ```python
 train, test = features_df.randomSplit([0.8, 0.2], seed=42)
 
-
 plt.hist(features_df.toPandas()['label'])
 plt.show()
 ```
 
 
-![png](output_86_0.png)
+![png](output_52_0.png)
 
 
-### Analyze label class imbalance - tbd +++++++++++++
+## Analyze label class imbalance
 
 
 ```python
 # calculate balancing ratio for account for class imbalance
-
 balancing_ratio = train.filter(train['label']==0).count()/train.count()
 train=train.withColumn("classWeights", F.when(train.label == 1,balancing_ratio).otherwise(1-balancing_ratio))
 ```
 
-## Machine Learning Model Selection, Tuning and Evaluation
+## Machine Learning Model Selection and Tuning
+
  * Model learning problem category: supervised learning, logistic regression
  * ML estimators from pyspark.ml:
      * LogisticRegression
-     * tbd
  * ML hyperparameters in estimators (for grid search/ tuning):
-     * LogisticRegression(maxIter=10, regParam=0.0, elasticNetParam=0)
-     * tbd
+     * LogisticRegression(maxIter=..., regParam=..., elasticNetParam=...)
  * ML evaluators from pyspark.ml:
      * BinaryClassificationEvaluator
-     * tbd
 
 
 ```python
 # Create a logistic regression object
-#lr = LogisticRegression(featuresCol = 'features', labelCol = 'label', weightCol="classWeights")
 lr = LogisticRegression(featuresCol = 'pcaFeatures', labelCol = 'label', weightCol="classWeights")
 
 # create evaluator
 evaluator = BinaryClassificationEvaluator(metricName = 'areaUnderPR')
-```
 
-
-```python
-# create lr_model
-lr_model = lr.fit(train)
-training_summary = lr_model.summary
-```
-
-
-```python
-# ToDo: evaluate training summary ++++++++++++++++
-
-# TBD
-```
-
-## Tune Model
-* use cross validation via CrossValidator and paramGrid
-
-
-```python
-# build paramGrid and cross validator
+# tune model via CrossValidator and parameter Grid 
+# build paramGrid
 paramGrid = (ParamGridBuilder() \
     .addGrid(lr.maxIter, [1, 5, 10]) \
     .addGrid(lr.regParam,[0.01, 0.1, 1.0]) \
     .addGrid(lr.elasticNetParam, [0.0, 0.5, 1.0]) \
     .build())
 
-
+# build cross validator
 crossval = CrossValidator(estimator=lr,
                           estimatorParamMaps=paramGrid,
                           evaluator=evaluator,
@@ -10479,52 +8876,25 @@ crossval_model = crossval.fit(train)
 pred = crossval_model.transform(test)
 ```
 
+## Model Evaluation
 
-```python
-#cvModel_q1 = crossval.fit(training)
-```
-
-
-```python
-#cvModel_q1.avgMetrics
-```
-
-
-```python
-#results = cvModel_q1.transform(test)
-```
-
-## Evaluate results
 * use scikit learn metrics f1, precision, recall for model evaluation
 
 
 ```python
 # evaluate results
 pd_pred = pred.toPandas()
-```
 
+# show resulting format
+pd_pred.head(3)
 
-```python
-pd_pred.head()
-```
-
-
-```python
 # calculate score for f1, precision, recall
 f1 = f1_score(pd_pred.label, pd_pred.prediction)
 recall = recall_score(pd_pred.label, pd_pred.prediction)
 precision = precision_score(pd_pred.label, pd_pred.prediction)
-```
 
-
-```python
 print("F1 Score: {:.2f}, Recall: {:.2f}, Precision: {:.2f}".format(f1, recall, precision))
 ```
 
-# Final Steps
-Clean up your code, adding comments and renaming variables to make the code easier to read and maintain. Refer to the Spark Project Overview page and Data Scientist Capstone Project Rubric to make sure you are including all components of the capstone project and meet all expectations. Remember, this includes thorough documentation in a README file in a Github repository, as well as a web app or blog post.
+    F1 Score: 0.23, Recall: 0.33, Precision: 0.18
 
-
-```python
-
-```
