@@ -2,23 +2,23 @@
 Data Science Capstone Project on predicting customer churn
 
 ## 1. Installations ##
-import numpy as np
-import pandas as pd
-import seaborn as sns
-from pyspark.sql import SparkSession, Window
-import pyspark.sql.functions as F
-from pyspark.sql.types import IntegerType, DateType, TimestampType, StringType, DoubleType, LongType
-%matplotlib inline
-import matplotlib.pyplot as plt
-import datetime
-from pyspark.ml.feature import VectorAssembler, MinMaxScaler
-from pyspark.ml import Pipeline
-from pyspark.ml.evaluation import BinaryClassificationEvaluator
-from pyspark.ml.tuning import ParamGridBuilder, CrossValidator
-from pyspark.ml.classification import LogisticRegression, DecisionTreeClassifier
-from sklearn.metrics import f1_score, recall_score, precision_score
-from pyspark.ml.feature import PCA
-import time 
+import numpy as np<br/>
+import pandas as pd<br/>
+import seaborn as sns<br/>
+from pyspark.sql import SparkSession, Window<br/>
+import pyspark.sql.functions as F<br/>
+from pyspark.sql.types import IntegerType, DateType, TimestampType, StringType, DoubleType, LongType<br/>
+%matplotlib inline<br/>
+import matplotlib.pyplot as plt<br/>
+import datetime<br/>
+from pyspark.ml.feature import VectorAssembler, MinMaxScaler<br/>
+from pyspark.ml import Pipeline<br/>
+from pyspark.ml.evaluation import BinaryClassificationEvaluator<br/>
+from pyspark.ml.tuning import ParamGridBuilder, CrossValidator<br/>
+from pyspark.ml.classification import LogisticRegression, DecisionTreeClassifier<br/>
+from sklearn.metrics import f1_score, recall_score, precision_score<br/>
+from pyspark.ml.feature import PCA<br/>
+import time <br/>
 
 ## 2. Project Motivation ##
 This project analyzes customer churn on the example of a fictive music streaming service called "Sparkify". The purpose is to show how such an analysis is done for large datasets by using Spark. The project is part of a Udacity Nanodegree project and thus for educational purposes.
